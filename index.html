@@ -1,0 +1,3344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>NSE Live Trading Journal</title>
+<style>
+/* ── DESIGN SYSTEM ── */
+:root {
+  --bg: #080c12;
+  --panel: #0e1420;
+  --card: #131b27;
+  --border: #1c2b3a;
+  --border2: #243447;
+  --accent: #00e5b0;
+  --accent-dim: rgba(0,229,176,0.12);
+  --accent2: #f0a500;
+  --red: #ff4560;
+  --green: #00c896;
+  --blue: #3d9eff;
+  --purple: #8b5cf6;
+  --text: #dce8f5;
+  --text2: #8ca0b8;
+  --text3: #4a6075;
+  --chart-bg: #080c12;
+  --grid: #111e2c;
+  --shadow: 0 4px 24px rgba(0,0,0,0.5);
+  --font: 'JetBrains Mono', 'Courier New', monospace;
+  --font2: 'Segoe UI', system-ui, sans-serif;
+}
+:root.light {
+  --bg: #f2f6fa;
+  --panel: #ffffff;
+  --card: #e8f0f8;
+  --border: #ccd9e8;
+  --border2: #b8ccde;
+  --accent: #00a882;
+  --accent-dim: rgba(0,168,130,0.1);
+  --accent2: #d97706;
+  --red: #e02020;
+  --green: #0a9e72;
+  --blue: #1a6fd4;
+  --text: #0f1e2e;
+  --text2: #4a6075;
+  --text3: #8ca0b8;
+  --chart-bg: #f8fbff;
+  --grid: #e2eaf4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font2);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 13px;
+}
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── SCREENS ── */
+.screen { display: none; height: 100vh; }
+.screen.active { display: flex; }
+
+/* ── CONFIG SCREEN ── */
+#config-screen {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 30% 40%, #0a2040 0%, #080c12 70%);
+  overflow-y: auto;
+  flex-direction: column;
+}
+:root.light #config-screen { background: radial-gradient(ellipse at 30% 40%, #c8dff5 0%, #f2f6fa 70%); }
+.config-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 520px;
+  max-width: 96vw;
+  margin: 16px auto;
+}
+.cfg-logo { font-family: var(--font); font-size: 11px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+.cfg-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.cfg-sub { font-size: 12px; color: var(--text2); margin-bottom: 24px; }
+.cfg-notice { background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 11px; color: var(--accent); margin-bottom: 20px; }
+.field-group { margin-bottom: 14px; }
+.field-group label { display: block; font-size: 10px; font-family: var(--font); text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 5px; }
+.field-group input, .field-group select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  color: var(--text); padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; font-family: var(--font2); outline: none; transition: border-color .2s;
+}
+.field-group input:focus, .field-group select:focus { border-color: var(--accent); }
+.range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cap-chips { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-top: 4px; }
+.chip {
+  padding: 6px 4px; border: 1px solid var(--border2); border-radius: 7px;
+  background: var(--bg); color: var(--text2); cursor: pointer;
+  font-size: 11px; text-align: center; transition: all .15s;
+}
+.chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.cfg-actions { display: flex; gap: 8px; margin-top: 20px; }
+.btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; transition: all .15s; font-family: var(--font2); letter-spacing: .3px; }
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { opacity: .85; }
+.btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: rgba(255,69,96,.15); color: var(--red); border: 1px solid rgba(255,69,96,.3); }
+.btn-danger:hover { background: rgba(255,69,96,.25); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; }
+.supabase-notice { background: rgba(61,158,255,.08); border: 1px solid rgba(61,158,255,.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 11px; color: var(--blue); }
+.supabase-notice a { color: var(--blue); }
+
+/* ── MAIN GAME SCREEN ── */
+#game-screen { flex-direction: row; }
+
+/* ── LEFT SIDEBAR ── */
+#sidebar {
+  width: 260px; background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; flex-shrink: 0;
+}
+.sb-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sb-logo { font-family: var(--font); font-size: 11px; color: var(--accent); letter-spacing: 2px; }
+.capital-box { padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--border); }
+.cap-label { font-size: 9px; font-family: var(--font); letter-spacing: 1px; color: var(--text3); text-transform: uppercase; }
+.cap-value { font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--font); }
+.cap-pnl { font-size: 11px; margin-top: 2px; }
+.sb-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.sb-tab {
+  flex: 1; padding: 8px 4px; text-align: center; font-size: 11px;
+  cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent;
+  transition: all .15s;
+}
+.sb-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.sb-pane { flex: 1; overflow-y: auto; display: none; }
+.sb-pane.active { display: block; }
+
+/* Watchlist items */
+.wl-item {
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .12s; display: flex;
+  align-items: center; gap: 8px;
+}
+.wl-item:hover { background: var(--card); }
+.wl-item.active-wl { background: var(--accent-dim); border-left: 2px solid var(--accent); }
+.wl-sym { font-family: var(--font); font-size: 12px; font-weight: 700; color: var(--text); flex: 1; }
+.wl-name { font-size: 10px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.status-badge {
+  padding: 2px 6px; border-radius: 10px; font-size: 9px;
+  font-weight: 700; font-family: var(--font); letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.s-watching { background: rgba(61,158,255,.15); color: var(--blue); }
+.s-in_trade { background: rgba(0,229,176,.15); color: var(--accent); }
+.s-exited { background: rgba(100,120,140,.15); color: var(--text2); }
+.wl-pnl { font-size: 11px; font-family: var(--font); font-weight: 700; flex-shrink: 0; }
+
+/* Positions panel */
+.pos-item {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .12s;
+}
+.pos-item:hover { background: var(--card); }
+.pos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.pos-sym { font-family: var(--font); font-size: 13px; font-weight: 700; }
+.pos-pnl { font-family: var(--font); font-size: 13px; font-weight: 700; }
+.pos-detail { font-size: 10px; color: var(--text2); }
+.dir-pill { padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 700; }
+.d-buy { background: rgba(0,200,150,.15); color: var(--green); }
+.d-sell { background: rgba(255,69,96,.15); color: var(--red); }
+
+/* Stats panel */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.stat-cell { background: var(--panel); padding: 10px 14px; }
+.stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; font-family: var(--font); }
+.stat-value { font-size: 15px; font-weight: 700; margin-top: 2px; font-family: var(--font); }
+
+/* ── CHART AREA ── */
+#chart-area {
+  flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative;
+}
+.chart-topbar {
+  height: 38px; background: var(--panel); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 6px; flex-shrink: 0;
+}
+.scrip-name { font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--text); }
+.scrip-fullname { font-size: 11px; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.price-badge { font-family: var(--font); font-size: 13px; font-weight: 700; }
+.chg-badge { font-size: 11px; }
+
+.chart-controls {
+  height: 34px; background: var(--card); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 4px; flex-shrink: 0;
+  overflow-x: auto;
+}
+.tf-btn {
+  padding: 3px 9px; border-radius: 5px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text2); cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: var(--font);
+  transition: all .12s; white-space: nowrap;
+}
+.tf-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.ctrl-sep { width: 1px; height: 18px; background: var(--border2); margin: 0 3px; flex-shrink: 0; }
+.ema-toggle {
+  padding: 2px 7px; border-radius: 10px; border: 1px solid; cursor: pointer;
+  font-size: 10px; font-weight: 700; font-family: var(--font); background: transparent;
+  transition: all .12s;
+}
+.e9 { border-color: #f0a500; color: #f0a500; }
+.e9.on { background: rgba(240,165,0,.15); }
+.e21 { border-color: #3d9eff; color: #3d9eff; }
+.e21.on { background: rgba(61,158,255,.15); }
+.e50 { border-color: #ff4560; color: #ff4560; }
+.e50.on { background: rgba(255,69,96,.15); }
+.e200 { border-color: #8b5cf6; color: #8b5cf6; }
+.e200.on { background: rgba(139,92,246,.15); }
+.draw-btn {
+  padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text2); cursor: pointer; font-size: 11px;
+  transition: all .12s;
+}
+.draw-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(240,165,0,.1); }
+.ctrl-right { margin-left: auto; display: flex; gap: 4px; }
+
+.ohlc-bar {
+  height: 22px; background: var(--bg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 12px;
+  font-size: 10px; font-family: var(--font); flex-shrink: 0;
+}
+.ohlc-item { display: flex; gap: 3px; }
+.ohlc-lbl { color: var(--text3); }
+.c-o { color: var(--text2); }
+.c-h { color: var(--green); }
+.c-l { color: var(--red); }
+.c-c { color: var(--accent); }
+.c-v { color: var(--purple); }
+
+#canvas-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+#main-canvas, #draw-canvas { position: absolute; top: 0; left: 0; }
+#vol-wrap { height: 14%; border-top: 1px solid var(--border); flex-shrink: 0; position: relative; overflow: hidden; }
+#vol-canvas { position: absolute; top: 0; left: 0; }
+
+/* ── RIGHT SIDEBAR ── */
+#right-panel {
+  width: 240px; background: var(--panel); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+}
+.rp-section { border-bottom: 1px solid var(--border); }
+.rp-title {
+  padding: 8px 14px; font-size: 9px; font-family: var(--font);
+  text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.trade-panel { padding: 10px 14px; }
+.tp-row { margin-bottom: 8px; }
+.tp-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; font-family: var(--font); margin-bottom: 3px; }
+.tp-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  color: var(--text); padding: 6px 9px; border-radius: 6px;
+  font-size: 13px; font-family: var(--font); outline: none; transition: border-color .2s;
+}
+.tp-input:focus { border-color: var(--accent); }
+.risk-calc { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; margin-bottom: 8px; font-size: 11px; }
+.rc-row { display: flex; justify-content: space-between; padding: 2px 0; }
+.rc-lbl { color: var(--text2); }
+.rc-val { font-family: var(--font); font-weight: 700; color: var(--accent); }
+.trade-btns { display: flex; gap: 6px; margin-bottom: 6px; }
+.btn-buy { flex: 1; padding: 8px 0; background: var(--green); color: #000; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 700; transition: opacity .15s; }
+.btn-buy:hover { opacity: .85; }
+.btn-sell-dir { flex: 1; padding: 8px 0; background: var(--red); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 700; transition: opacity .15s; }
+.btn-sell-dir:hover { opacity: .85; }
+.action-stack { display: flex; flex-direction: column; gap: 5px; }
+.btn-full { width: 100%; padding: 7px; border: none; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 700; transition: all .15s; font-family: var(--font2); }
+.btn-exit-full { background: var(--accent2); color: #000; }
+.btn-partial { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.3); }
+.btn-partial:hover { background: rgba(139,92,246,.25); }
+.btn-next-stock { background: var(--panel); color: var(--text2); border: 1px solid var(--border2); }
+.btn-next-stock:hover { border-color: var(--accent); color: var(--accent); }
+.btn-skip-wl { background: rgba(61,158,255,.08); color: var(--blue); border: 1px solid rgba(61,158,255,.2); }
+.btn-dismiss { background: rgba(255,69,96,.08); color: var(--red); border: 1px solid rgba(255,69,96,.2); }
+.trail-sl-row { display: flex; gap: 5px; align-items: center; }
+.trail-sl-row input { flex: 1; }
+
+/* Position live P&L in right panel */
+.live-pos-box {
+  margin: 0 14px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+}
+.lpb-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+.lpb-lbl { color: var(--text2); }
+.lpb-val { font-family: var(--font); font-weight: 700; }
+
+/* Alert setup */
+.alert-row { display: flex; gap: 5px; align-items: center; padding: 0 14px 10px; }
+.alert-row select, .alert-row input { flex: 1; background: var(--bg); border: 1px solid var(--border2); color: var(--text); padding: 5px 7px; border-radius: 6px; font-size: 11px; outline: none; }
+
+/* ── SCAN MODE OVERLAY ── */
+#scan-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(8,12,18,.95);
+  z-index: 100; flex-direction: column; align-items: center; justify-content: center;
+}
+#scan-overlay.show { display: flex; }
+.scan-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 96vw; }
+.scan-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.scan-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+.scan-progress { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+.scan-progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+.scan-stock-info { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+.ssi-sym { font-family: var(--font); font-size: 20px; font-weight: 700; color: var(--accent); }
+.ssi-name { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+.ssi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.ssi-cell { background: var(--card); border-radius: 7px; padding: 8px; }
+.ssi-cl { font-size: 9px; color: var(--text3); text-transform: uppercase; font-family: var(--font); }
+.ssi-cv { font-size: 13px; font-weight: 700; margin-top: 2px; font-family: var(--font); }
+.scan-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scan-actions .btn { padding: 12px; font-size: 13px; }
+
+/* ── NOTIFICATIONS ── */
+#notif-panel {
+  position: fixed; top: 50px; right: 16px; z-index: 200;
+  display: flex; flex-direction: column; gap: 8px; max-width: 320px; width: 100%;
+}
+.notif {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; font-size: 12px;
+  display: flex; gap: 10px; align-items: flex-start;
+  box-shadow: var(--shadow); animation: slideIn .3s ease;
+}
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.notif-icon { font-size: 16px; flex-shrink: 0; }
+.notif-text { flex: 1; }
+.notif-title { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.notif-body { color: var(--text2); }
+.notif-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; padding: 0; }
+.notif.n-success { border-color: var(--green); }
+.notif.n-alert { border-color: var(--accent2); }
+.notif.n-error { border-color: var(--red); }
+
+/* ── JOURNAL SCREEN ── */
+#journal-screen { flex-direction: column; overflow: hidden; }
+.j-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.j-header h2 { font-size: 16px; font-weight: 700; }
+.j-stats { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; padding: 10px 18px; flex-shrink: 0; }
+.js { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; }
+.js-l { font-size: 9px; color: var(--text3); text-transform: uppercase; font-family: var(--font); letter-spacing: .4px; }
+.js-v { font-size: 16px; font-weight: 700; margin-top: 2px; font-family: var(--font); }
+.j-filters { display: flex; gap: 8px; padding: 8px 18px; flex-shrink: 0; border-bottom: 1px solid var(--border); align-items: center; }
+.j-filter-btn { padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-size: 11px; transition: all .12s; }
+.j-filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.j-tbl-wrap { flex: 1; overflow-y: auto; padding: 0 18px 18px; }
+.j-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.j-tbl th { background: var(--card); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 9px; text-transform: uppercase; color: var(--text3); position: sticky; top: 0; z-index: 1; font-family: var(--font); letter-spacing: .5px; }
+.j-tbl td { padding: 7px 10px; border-bottom: 1px solid rgba(28,43,58,.4); }
+.j-tbl tr:hover td { background: var(--card); }
+.pill { display: inline-block; padding: 2px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; font-family: var(--font); }
+.p-buy { background: rgba(0,200,150,.15); color: var(--green); }
+.p-sell-p { background: rgba(255,69,96,.15); color: var(--red); }
+.p-win { background: rgba(0,200,150,.15); color: var(--green); }
+.p-loss { background: rgba(255,69,96,.15); color: var(--red); }
+.p-skip { background: rgba(74,96,117,.15); color: var(--text2); }
+.p-open { background: rgba(61,158,255,.15); color: var(--blue); }
+
+/* ── HISTORY / SESSIONS SCREEN ── */
+#history-screen { flex-direction: column; overflow: hidden; }
+.h-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.h-header h2 { font-size: 16px; font-weight: 700; }
+.h-list { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ── DISMISSED SCREEN ── */
+#dismissed-screen { flex-direction: column; overflow: hidden; }
+
+/* ── LOADING OVERLAY ── */
+#loading-overlay {
+  display: none; position: absolute; inset: 0;
+  background: rgba(8,12,18,.92); z-index: 60;
+  align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+}
+#loading-overlay.show { display: flex; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-text { font-family: var(--font); font-size: 12px; color: var(--text2); }
+.load-sub { font-size: 11px; color: var(--text3); }
+
+/* ── EMPTY STATES ── */
+.empty-state { padding: 40px 20px; text-align: center; color: var(--text3); }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 13px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── MODAL ── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(8,12,18,.85);
+  z-index: 300; align-items: center; justify-content: center;
+}
+.modal-backdrop.show { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 460px; max-width: 96vw; }
+.modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 16px; border-radius: 8px; font-size: 12px; z-index: 9999;
+  opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap;
+  font-family: var(--font);
+}
+#toast.show { opacity: 1; }
+
+/* ── ALERTS SCREEN ── */
+#alerts-screen { flex-direction: column; overflow: hidden; }
+.alert-item { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.alert-item.triggered { opacity: .5; }
+
+/* ── SEARCH DROPDOWN ── */
+.s-drop-item {
+  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background .1s; display: flex; align-items: center; gap: 8px;
+}
+.s-drop-item:hover, .s-drop-item.s-active { background: var(--accent-dim); }
+.s-drop-item:last-child { border-bottom: none; }
+.s-sym { font-family: var(--font); font-size: 12px; font-weight: 700; color: var(--accent); min-width: 70px; }
+.s-name { font-size: 10px; color: var(--text2); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.s-sector { font-size: 9px; color: var(--text3); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  #right-panel { display: none; }
+  #sidebar { width: 220px; }
+}
+@media (max-width: 640px) {
+  body { overflow: auto; }
+  #game-screen { flex-direction: column; }
+  #sidebar { width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════════════════════════════
+     CONFIG / SETUP SCREEN
+════════════════════════════════════════ -->
+<div id="config-screen" class="screen active">
+  <div class="config-card">
+    <div class="cfg-logo">NSE LIVE</div>
+    <div class="cfg-title">Trading Journal</div>
+    <div class="cfg-sub">Live market data · Real positions · Real discipline</div>
+
+    <div id="supabase-notice" class="supabase-notice" style="display:none">
+      ⚠️ Supabase not configured. Data will be stored locally only.
+      <a href="#" onclick="showSettings()">Configure now →</a>
+    </div>
+
+    <div class="cfg-notice" id="market-notice">
+      📡 Connecting to market data...
+    </div>
+
+    <div class="field-group">
+      <label>Trader Name</label>
+      <input id="cfg-name" placeholder="Your name" value="">
+    </div>
+
+    <div class="field-group">
+      <label>Portfolio Capital (₹)</label>
+      <input type="number" id="cfg-capital" value="3000000" min="100000" step="100000">
+    </div>
+
+    <div class="field-group">
+      <label>Risk per trade (%)</label>
+      <input type="number" id="cfg-risk" value="1" min="0.1" max="5" step="0.1">
+    </div>
+
+    <div class="field-group">
+      <label>Market Cap Filter (₹ Crore)</label>
+      <div class="range-row">
+        <input type="number" id="cfg-cap-min" placeholder="Min (e.g. 1000)" value="1000">
+        <input type="number" id="cfg-cap-max" placeholder="Max (blank = no limit)" value="">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Quick Cap Size</label>
+      <div class="cap-chips">
+        <div class="chip" data-min="100000" data-max="" onclick="setCapRange(this)">All</div>
+        <div class="chip active" data-min="1000" data-max="" onclick="setCapRange(this)">1000Cr+</div>
+        <div class="chip" data-min="20000" data-max="" onclick="setCapRange(this)">Large</div>
+        <div class="chip" data-min="5000" data-max="20000" onclick="setCapRange(this)">Mid</div>
+        <div class="chip" data-min="1000" data-max="5000" onclick="setCapRange(this)">Small</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Sector Filter</label>
+      <select id="cfg-sector">
+        <option value="all">All Sectors</option>
+        <option value="Financial Services">Banking &amp; Finance</option>
+        <option value="Information Technology">Information Technology</option>
+        <option value="Healthcare">Pharma &amp; Healthcare</option>
+        <option value="Consumer Cyclical">Consumer Cyclical</option>
+        <option value="Consumer Defensive">FMCG &amp; Consumer Defensive</option>
+        <option value="Basic Materials">Metals &amp; Materials</option>
+        <option value="Energy">Oil, Gas &amp; Energy</option>
+        <option value="Industrials">Industrials &amp; Infrastructure</option>
+        <option value="Real Estate">Real Estate</option>
+        <option value="Communication Services">Telecom &amp; Media</option>
+        <option value="Utilities">Utilities</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label>Telegram Chat ID (for alerts)</label>
+      <input id="cfg-telegram" placeholder="e.g. 123456789" value="">
+    </div>
+
+    <div class="field-group">
+      <label>Telegram Bot Token</label>
+      <input id="cfg-tg-token" placeholder="123456789:ABCdef..." value="" type="password">
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Your existing NMS bot token. Stored locally only.</div>
+    </div>
+
+    <div class="field-group">
+      <label>Supabase URL</label>
+      <input id="cfg-sb-url" placeholder="https://xxxx.supabase.co" value="">
+    </div>
+
+    <div class="field-group">
+      <label>Supabase Edge Function Name</label>
+      <input id="cfg-proxy-fn" placeholder="e.g. yahoo-proxy or smart-action" value="yahoo-proxy">
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">The name you gave your Edge Function in Supabase.</div>
+    </div>
+
+    <div class="field-group">
+      <label>Supabase Anon Key</label>
+      <input id="cfg-sb-key" placeholder="eyJhbGci..." value="" type="password">
+    </div>
+
+    <div class="cfg-actions">
+      <button class="btn btn-primary" onclick="startApp()" style="flex:1">🚀 Launch Journal</button>
+      <button class="btn btn-secondary" onclick="showHistory()">📋 History</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MAIN GAME SCREEN
+════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+
+  <!-- LEFT SIDEBAR -->
+  <div id="sidebar">
+    <div class="sb-header">
+      <span class="sb-logo">NSE LIVE</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-xs btn-secondary" onclick="startScan()" title="Scan stocks">🔍</button>
+        <button class="btn btn-xs btn-secondary" onclick="showScreen('config-screen')" title="Settings">⚙</button>
+      </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div style="padding:7px 10px;border-bottom:1px solid var(--border);position:relative">
+      <div style="display:flex;gap:5px;align-items:center">
+        <span style="font-size:13px">🔍</span>
+        <input id="stock-search" type="text" placeholder="Search symbol or name..." autocomplete="off"
+          style="flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 9px;border-radius:7px;font-size:11px;font-family:var(--font2);outline:none"
+          oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" onfocus="showSearchDrop()" onblur="hideSearchDrop()">
+        <button class="btn btn-xs btn-primary" onclick="loadSearched()" style="padding:5px 8px;font-size:11px">Go</button>
+      </div>
+      <div id="search-dropdown" style="display:none;position:absolute;left:10px;right:10px;top:36px;background:var(--card);border:1px solid var(--border2);border-radius:8px;z-index:50;max-height:220px;overflow-y:auto;box-shadow:var(--shadow)"></div>
+    </div>
+
+    <div class="capital-box">
+      <div class="cap-label">Portfolio Capital</div>
+      <div class="cap-value" id="cap-val">₹—</div>
+      <div class="cap-pnl" id="cap-pnl">—</div>
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <button class="btn btn-xs btn-secondary" onclick="resetCapital()" style="font-size:9px">↺ Reset</button>
+        <button class="btn btn-xs btn-secondary" onclick="showScreen('journal-screen')" style="font-size:9px">📓 Journal</button>
+        <button class="btn btn-xs btn-secondary" onclick="showScreen('alerts-screen')" style="font-size:9px">🔔 Alerts</button>
+      </div>
+    </div>
+
+    <div class="sb-tabs">
+      <div class="sb-tab active" onclick="switchSbTab('watchlist')" id="tab-watchlist">Watchlist</div>
+      <div class="sb-tab" onclick="switchSbTab('positions')" id="tab-positions">Positions</div>
+      <div class="sb-tab" onclick="switchSbTab('stats')" id="tab-stats">Stats</div>
+    </div>
+
+    <div class="sb-pane active" id="pane-watchlist">
+      <div style="padding:6px 14px;border-bottom:1px solid var(--border);display:flex;gap:4px">
+        <button class="btn btn-xs btn-secondary" style="flex:1" onclick="filterWL('all')" id="wlf-all">All</button>
+        <button class="btn btn-xs btn-secondary" style="flex:1" onclick="filterWL('watching')" id="wlf-watching">Watching</button>
+        <button class="btn btn-xs btn-secondary" style="flex:1" onclick="filterWL('in_trade')" id="wlf-in_trade">In Trade</button>
+      </div>
+      <div id="watchlist-items">
+        <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No stocks yet.<br>Click 🔍 to scan.</div></div>
+      </div>
+    </div>
+
+    <div class="sb-pane" id="pane-positions">
+      <div id="positions-list">
+        <div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No open positions.</div></div>
+      </div>
+    </div>
+
+    <div class="sb-pane" id="pane-stats">
+      <div class="stat-grid" id="stats-grid">
+        <div class="stat-cell"><div class="stat-label">Trades</div><div class="stat-value" id="st-trades">0</div></div>
+        <div class="stat-cell"><div class="stat-label">Win %</div><div class="stat-value" id="st-wr">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Wins</div><div class="stat-value" style="color:var(--green)" id="st-wins">0</div></div>
+        <div class="stat-cell"><div class="stat-label">Losses</div><div class="stat-value" style="color:var(--red)" id="st-losses">0</div></div>
+        <div class="stat-cell"><div class="stat-label">Total P&L</div><div class="stat-value" id="st-pnl">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Avg R</div><div class="stat-value" id="st-avgr">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Avg Days</div><div class="stat-value" id="st-avgdays">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Best</div><div class="stat-value" style="color:var(--green)" id="st-best">—</div></div>
+      </div>
+      <div style="padding:10px 14px">
+        <button class="btn btn-xs btn-secondary" style="width:100%;margin-bottom:6px" onclick="showScreen('dismissed-screen')">🚫 View Dismissed</button>
+        <button class="btn btn-xs btn-danger" style="width:100%" onclick="resetCapital()">↺ Reset Capital</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHART AREA -->
+  <div id="chart-area">
+    <div class="chart-topbar">
+      <span class="scrip-name" id="scrip-sym">—</span>
+      <span class="scrip-fullname" id="scrip-fullname">Select a stock from watchlist or scan</span>
+      <span class="price-badge" id="price-badge">—</span>
+      <span class="chg-badge" id="chg-badge"></span>
+      <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0">
+        <button class="btn btn-xs btn-secondary" id="topbar-wl-btn" onclick="addToWatchlist()" title="Add to Watchlist" style="font-size:10px">+ WL</button>
+        <button class="btn btn-xs btn-secondary" onclick="refreshChart()" title="Refresh chart" style="font-size:10px">↻</button>
+      </div>
+    </div>
+    <div class="chart-controls">
+      <button class="tf-btn active" id="tf-D" onclick="switchTF('D')">D</button>
+      <button class="tf-btn" id="tf-W" onclick="switchTF('W')">W</button>
+      <button class="tf-btn" id="tf-M" onclick="switchTF('M')">M</button>
+      <div class="ctrl-sep"></div>
+      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">9</button>
+      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">21</button>
+      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">50</button>
+      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">200</button>
+      <div class="ctrl-sep"></div>
+      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏 Trend</button>
+      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">— H-Line</button>
+      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶ Ray</button>
+      <button class="draw-btn" onclick="clearDrawings()">🗑</button>
+      <div class="ctrl-right">
+        <button class="btn btn-xs btn-secondary" onclick="refreshChart()">↻</button>
+        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()">◐</button>
+      </div>
+    </div>
+    <div class="ohlc-bar">
+      <div class="ohlc-item"><span class="ohlc-lbl">O</span><span class="c-o" id="oi-o">—</span></div>
+      <div class="ohlc-item"><span class="ohlc-lbl">H</span><span class="c-h" id="oi-h">—</span></div>
+      <div class="ohlc-item"><span class="ohlc-lbl">L</span><span class="c-l" id="oi-l">—</span></div>
+      <div class="ohlc-item"><span class="ohlc-lbl">C</span><span class="c-c" id="oi-c">—</span></div>
+      <div class="ohlc-item"><span class="ohlc-lbl">V</span><span class="c-v" id="oi-v">—</span></div>
+      <div class="ohlc-item" style="margin-left:auto"><span class="ohlc-lbl">52W</span><span id="oi-52" style="color:var(--text2)">—</span></div>
+      <div class="ohlc-item"><span class="ohlc-lbl">MCap</span><span id="oi-mcap" style="color:var(--text2)">—</span></div>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="main-canvas"></canvas>
+      <canvas id="draw-canvas" style="cursor:crosshair"></canvas>
+      <div id="loading-overlay" class="show">
+        <div class="spinner"></div>
+        <div class="load-text" id="load-text">Initializing...</div>
+        <div class="load-sub" id="load-sub">Setting up data connections</div>
+      </div>
+    </div>
+    <div id="vol-wrap"><canvas id="vol-canvas"></canvas></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <!-- Current stock info -->
+    <div class="rp-section" id="rp-stock-info" style="display:none">
+      <div class="rp-title">
+        <span>Live Position</span>
+        <span id="rp-pos-sym" style="color:var(--accent);font-family:var(--font)"></span>
+      </div>
+      <div class="live-pos-box" id="live-pos-box">
+        <div class="lpb-row"><span class="lpb-lbl">Entry</span><span class="lpb-val" id="lp-entry">—</span></div>
+        <div class="lpb-row"><span class="lpb-lbl">Current</span><span class="lpb-val" id="lp-curr">—</span></div>
+        <div class="lpb-row"><span class="lpb-lbl">P&L</span><span class="lpb-val" id="lp-pnl">—</span></div>
+        <div class="lpb-row"><span class="lpb-lbl">SL</span><span class="lpb-val" id="lp-sl">—</span></div>
+        <div class="lpb-row"><span class="lpb-lbl">Qty</span><span class="lpb-val" id="lp-qty">—</span></div>
+      </div>
+    </div>
+
+    <!-- Trade entry panel -->
+    <div class="rp-section">
+      <div class="rp-title"><span id="rp-mode-title">Trade Setup</span></div>
+      <div class="trade-panel" id="pre-trade-panel">
+        <div class="tp-row">
+          <div class="tp-label">Stop Loss (₹)</div>
+          <input type="number" class="tp-input" id="tp-sl" placeholder="Enter SL price" oninput="calcRisk()">
+        </div>
+        <div class="tp-row">
+          <div class="tp-label">Quantity (optional override)</div>
+          <input type="number" class="tp-input" id="tp-qty" placeholder="Leave blank = auto">
+        </div>
+        <div class="risk-calc" id="risk-calc" style="display:none">
+          <div class="rc-row"><span class="rc-lbl">Entry (last close)</span><span class="rc-val" id="rc-entry">—</span></div>
+          <div class="rc-row"><span class="rc-lbl">Suggested Qty (1% risk)</span><span class="rc-val" id="rc-qty">—</span></div>
+          <div class="rc-row"><span class="rc-lbl">Capital used</span><span class="rc-val" id="rc-alloc">—</span></div>
+          <div class="rc-row"><span class="rc-lbl">Risk ₹</span><span class="rc-val" id="rc-risk">—</span></div>
+          <div class="rc-row"><span class="rc-lbl">SL %</span><span class="rc-val" id="rc-slpct">—</span></div>
+        </div>
+        <div class="trade-btns">
+          <button class="btn-buy" onclick="enterTrade('BUY')">▲ LONG</button>
+          <button class="btn-sell-dir" onclick="enterTrade('SELL')">▼ SHORT</button>
+        </div>
+        <div class="action-stack">
+          <button class="btn-full btn-skip-wl" onclick="skipToNext()">⏭ Next Stock</button>
+          <button class="btn-full btn-skip-wl" style="background:rgba(0,229,176,.06);color:var(--accent);border-color:rgba(0,229,176,.2)" onclick="addToWatchlist()">+ Add to Watchlist</button>
+          <button class="btn-full btn-dismiss" onclick="dismissStock()">🚫 Dismiss</button>
+        </div>
+      </div>
+
+      <!-- In-trade panel -->
+      <div class="trade-panel" id="in-trade-panel" style="display:none">
+        <div class="tp-row">
+          <div class="tp-label">Trail Stop Loss</div>
+          <div class="trail-sl-row">
+            <input type="number" class="tp-input" id="tp-trail" placeholder="New SL price">
+            <button class="btn btn-sm btn-secondary" onclick="updateTrailSL()">Set</button>
+          </div>
+        </div>
+        <div class="action-stack">
+          <button class="btn-full btn-exit-full" onclick="exitTrade()">🚪 Exit @ Close</button>
+          <button class="btn-full btn-partial" onclick="partialExit(30)">⅓ Exit 30%</button>
+          <button class="btn-full btn-partial" onclick="partialExit(50)">½ Exit 50%</button>
+          <button class="btn-full btn-next-stock" onclick="skipToNext()">⏭ View Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert setup for current stock -->
+    <div class="rp-section">
+      <div class="rp-title"><span>Price Alert</span></div>
+      <div style="padding:8px 14px 10px">
+        <div style="display:flex;gap:5px;margin-bottom:6px">
+          <select id="alert-cond" class="tp-input" style="flex:1;font-size:11px;padding:5px 7px">
+            <option value="above">Closes Above</option>
+            <option value="below">Closes Below</option>
+          </select>
+          <input type="number" id="alert-price" class="tp-input" placeholder="Price ₹" style="flex:1;font-size:11px;padding:5px 7px">
+        </div>
+        <button class="btn btn-sm btn-secondary" style="width:100%" onclick="setAlert()">🔔 Set Alert</button>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="rp-section" style="flex:1">
+      <div class="rp-title"><span>Chart Notes</span></div>
+      <div style="padding:8px 14px">
+        <textarea id="chart-note" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px;border-radius:6px;font-size:11px;resize:vertical;min-height:80px;font-family:var(--font2)" placeholder="Observations, setup notes..."></textarea>
+        <button class="btn btn-xs btn-secondary" style="width:100%;margin-top:5px" onclick="saveNote()">Save Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCAN OVERLAY
+════════════════════════════════════════ -->
+<div id="scan-overlay">
+  <div class="scan-card">
+    <div class="scan-title">🔍 Stock Scanner</div>
+    <div class="scan-sub" id="scan-sub">Scanning NSE universe based on your filters</div>
+    <div class="scan-progress"><div class="scan-progress-bar" id="scan-bar" style="width:0%"></div></div>
+    <div class="scan-stock-info" id="scan-stock-info">
+      <div class="ssi-sym" id="scan-sym">—</div>
+      <div class="ssi-name" id="scan-name">Loading stock data...</div>
+      <div class="ssi-grid">
+        <div class="ssi-cell"><div class="ssi-cl">Price</div><div class="ssi-cv" id="scan-price">—</div></div>
+        <div class="ssi-cell"><div class="ssi-cl">Mkt Cap</div><div class="ssi-cv" id="scan-mcap">—</div></div>
+        <div class="ssi-cell"><div class="ssi-cl">Sector</div><div class="ssi-cv" id="scan-sector" style="font-size:10px">—</div></div>
+        <div class="ssi-cell"><div class="ssi-cl">52W High</div><div class="ssi-cv" id="scan-52h">—</div></div>
+        <div class="ssi-cell"><div class="ssi-cl">52W Low</div><div class="ssi-cv" id="scan-52l">—</div></div>
+        <div class="ssi-cell"><div class="ssi-cl">Chg%</div><div class="ssi-cv" id="scan-chg">—</div></div>
+      </div>
+    </div>
+    <div class="scan-actions">
+      <button class="btn btn-secondary" onclick="scanSkip()">⏭ Skip</button>
+      <button class="btn btn-primary" onclick="scanAddToWatchlist()">+ Add to Watchlist</button>
+      <button class="btn btn-danger btn-sm" onclick="scanDismiss()">🚫 Dismiss</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeScan()">✕ Close</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--text3);text-align:center" id="scan-status">—</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     JOURNAL SCREEN
+════════════════════════════════════════ -->
+<div id="journal-screen" class="screen">
+  <div class="j-header">
+    <h2>📓 Trade Journal</h2>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="showScreen('game-screen')">← Back</button>
+    </div>
+  </div>
+  <div class="j-stats" id="j-stats"></div>
+  <div class="j-filters">
+    <span style="font-size:11px;color:var(--text2)">Filter:</span>
+    <button class="j-filter-btn active" onclick="filterTrades('all')" id="jf-all">All</button>
+    <button class="j-filter-btn" onclick="filterTrades('WIN')" id="jf-win">Wins</button>
+    <button class="j-filter-btn" onclick="filterTrades('LOSS')" id="jf-loss">Losses</button>
+    <button class="j-filter-btn" onclick="filterTrades('open')" id="jf-open">Open</button>
+  </div>
+  <div class="j-tbl-wrap">
+    <table class="j-tbl">
+      <thead><tr>
+        <th>#</th><th>Symbol</th><th>Dir</th><th>Entry</th><th>Exit</th>
+        <th>SL</th><th>Qty</th><th>P&L ₹</th><th>P&L%</th><th>Days</th>
+        <th>Date</th><th>Result</th><th>Notes</th>
+      </tr></thead>
+      <tbody id="j-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     ALERTS SCREEN
+════════════════════════════════════════ -->
+<div id="alerts-screen" class="screen" style="flex-direction:column;overflow:hidden">
+  <div class="j-header">
+    <h2>🔔 Price Alerts</h2>
+    <button class="btn btn-primary btn-sm" onclick="showScreen('game-screen')">← Back</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 18px" id="alerts-list">
+    <div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No alerts set yet.</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     DISMISSED SCREEN
+════════════════════════════════════════ -->
+<div id="dismissed-screen" class="screen" style="flex-direction:column;overflow:hidden">
+  <div class="j-header">
+    <h2>🚫 Dismissed Stocks</h2>
+    <button class="btn btn-primary btn-sm" onclick="showScreen('game-screen')">← Back</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 18px" id="dismissed-list"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     NOTIFICATIONS
+════════════════════════════════════════ -->
+<div id="notif-panel"></div>
+<div id="toast"></div>
+
+<!-- ════════════════════════════════════════
+     RESET CAPITAL MODAL
+════════════════════════════════════════ -->
+<div class="modal-backdrop" id="reset-modal">
+  <div class="modal">
+    <h3>↺ Reset Capital</h3>
+    <div class="field-group">
+      <label>New Starting Capital (₹)</label>
+      <input type="number" id="reset-cap-input" value="3000000" step="100000">
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px">This will reset your portfolio to the specified amount. All open position P&L will be preserved.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('reset-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmResetCapital()">Reset Capital</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════
+// NSE LIVE TRADING JOURNAL — Core JS
+// ════════════════════════════════════════════════════════════
+
+// ── CONFIG ──────────────────────────────────────────────────
+const CFG = {
+  sbUrl: '',
+  sbKey: '',
+  proxyFnName: 'yahoo-proxy',
+  telegramChatId: '',
+  capital: 3000000,
+  startCapital: 3000000,
+  riskPct: 1,
+  capMin: 1000,
+  capMax: null,
+  sector: 'all',
+  traderName: 'Trader',
+};
+
+// ── STATE ────────────────────────────────────────────────────
+const G = {
+  currentSymbol: null,
+  currentData: null,  // { timestamps, opens, highs, lows, closes, volumes }
+  currentTF: 'D',
+  currentMeta: null,  // quote data from Yahoo
+  openPosition: null, // current position for loaded stock
+  emas: { 9: true, 21: true, 50: false, 200: false },
+  tool: null,
+  drawings: [],
+  drawStart: null,
+  isDrawing: false,
+  mCtx: null,
+  dCtx: null,
+  vCtx: null,
+  viewStart: 0,
+  candleW: 9,
+  chartPad: { l: 60, r: 70, t: 20, b: 30 },
+  wlFilter: 'all',
+  jFilter: 'all',
+  scanQueue: [],
+  scanIndex: 0,
+  scanCurrentMeta: null,
+};
+
+// ── NSE STOCK UNIVERSE (~1500 stocks: Nifty500 + Midcap400 + Smallcap250 + liquid names) ──
+// Format: [yahoo_symbol, company_name, sector, approx_mcap_cr]
+// Market cap is approximate seed value only — live cap is fetched from Yahoo during scan
+const NSE_STOCKS = [
+// ── LARGE CAP / NIFTY 50 ──
+['RELIANCE.NS','Reliance Industries','Energy',1850000],
+['TCS.NS','Tata Consultancy Services','Information Technology',1350000],
+['HDFCBANK.NS','HDFC Bank','Financial Services',1150000],
+['BHARTIARTL.NS','Bharti Airtel','Communication Services',900000],
+['ICICIBANK.NS','ICICI Bank','Financial Services',850000],
+['INFOSYS.NS','Infosys','Information Technology',620000],
+['SBIN.NS','State Bank of India','Financial Services',550000],
+['HINDUNILVR.NS','Hindustan Unilever','Consumer Defensive',500000],
+['ITC.NS','ITC Ltd','Consumer Defensive',480000],
+['LT.NS','Larsen & Toubro','Industrials',460000],
+['KOTAKBANK.NS','Kotak Mahindra Bank','Financial Services',380000],
+['BAJFINANCE.NS','Bajaj Finance','Financial Services',420000],
+['HCLTECH.NS','HCL Technologies','Information Technology',380000],
+['WIPRO.NS','Wipro','Information Technology',270000],
+['ASIANPAINT.NS','Asian Paints','Basic Materials',240000],
+['AXISBANK.NS','Axis Bank','Financial Services',350000],
+['MARUTI.NS','Maruti Suzuki','Consumer Cyclical',370000],
+['SUNPHARMA.NS','Sun Pharmaceutical','Healthcare',340000],
+['TITAN.NS','Titan Company','Consumer Cyclical',290000],
+['ULTRACEMCO.NS','UltraTech Cement','Basic Materials',280000],
+['NESTLEIND.NS','Nestle India','Consumer Defensive',210000],
+['POWERGRID.NS','Power Grid Corp','Utilities',250000],
+['NTPC.NS','NTPC','Utilities',280000],
+['M%26M.NS','Mahindra and Mahindra','Consumer Cyclical',350000],
+['BAJAJFINSV.NS','Bajaj Finserv','Financial Services',250000],
+['TATAMOTORS.NS','Tata Motors','Consumer Cyclical',290000],
+['ADANIENT.NS','Adani Enterprises','Industrials',310000],
+['ADANIPORTS.NS','Adani Ports','Industrials',240000],
+['COALINDIA.NS','Coal India','Energy',200000],
+['ONGC.NS','ONGC','Energy',290000],
+['DRREDDY.NS','Dr Reddys Laboratories','Healthcare',110000],
+['TECHM.NS','Tech Mahindra','Information Technology',120000],
+['HDFCLIFE.NS','HDFC Life Insurance','Financial Services',130000],
+['SBILIFE.NS','SBI Life Insurance','Financial Services',140000],
+['CIPLA.NS','Cipla','Healthcare',100000],
+['HEROMOTOCO.NS','Hero MotoCorp','Consumer Cyclical',60000],
+['DIVISLAB.NS','Divis Laboratories','Healthcare',90000],
+['GRASIM.NS','Grasim Industries','Basic Materials',140000],
+['EICHERMOT.NS','Eicher Motors','Consumer Cyclical',120000],
+['BRITANNIA.NS','Britannia Industries','Consumer Defensive',110000],
+['INDUSINDBK.NS','IndusInd Bank','Financial Services',70000],
+['TATACONSUM.NS','Tata Consumer Products','Consumer Defensive',80000],
+['JSWSTEEL.NS','JSW Steel','Basic Materials',190000],
+['TATASTEEL.NS','Tata Steel','Basic Materials',170000],
+['HINDALCO.NS','Hindalco Industries','Basic Materials',120000],
+['APOLLOHOSP.NS','Apollo Hospitals','Healthcare',80000],
+['BAJAJ-AUTO.NS','Bajaj Auto','Consumer Cyclical',200000],
+['VEDL.NS','Vedanta','Basic Materials',110000],
+['SHREECEM.NS','Shree Cement','Basic Materials',60000],
+['BPCL.NS','BPCL','Energy',110000],
+// ── NIFTY NEXT 50 ──
+['IOC.NS','Indian Oil Corp','Energy',130000],
+['HAL.NS','Hindustan Aeronautics','Industrials',220000],
+['BEL.NS','Bharat Electronics','Industrials',140000],
+['ABB.NS','ABB India','Industrials',80000],
+['SIEMENS.NS','Siemens India','Industrials',70000],
+['PIDILITIND.NS','Pidilite Industries','Basic Materials',90000],
+['HAVELLS.NS','Havells India','Industrials',80000],
+['BERGEPAINT.NS','Berger Paints','Basic Materials',55000],
+['TRENT.NS','Trent','Consumer Cyclical',100000],
+['POLYCAB.NS','Polycab India','Industrials',65000],
+['DMART.NS','Avenue Supermarts','Consumer Defensive',260000],
+['ZOMATO.NS','Zomato','Consumer Cyclical',200000],
+['IRCTC.NS','Indian Railway Catering','Consumer Cyclical',60000],
+['PNB.NS','Punjab National Bank','Financial Services',90000],
+['CANBK.NS','Canara Bank','Financial Services',80000],
+['BANKBARODA.NS','Bank of Baroda','Financial Services',90000],
+['UNIONBANK.NS','Union Bank of India','Financial Services',60000],
+['IRFC.NS','Indian Railway Finance','Financial Services',190000],
+['PFC.NS','Power Finance Corp','Financial Services',140000],
+['RECLTD.NS','REC Limited','Financial Services',120000],
+['DLF.NS','DLF','Real Estate',200000],
+['GODREJPROP.NS','Godrej Properties','Real Estate',60000],
+['OBEROIRLTY.NS','Oberoi Realty','Real Estate',50000],
+['INDIGO.NS','InterGlobe Aviation','Industrials',120000],
+['VBL.NS','Varun Beverages','Consumer Defensive',120000],
+['LTIM.NS','LTIMindtree','Information Technology',135000],
+['DELHIVERY.NS','Delhivery','Industrials',20000],
+['NYKAA.NS','FSN E-Commerce Nykaa','Consumer Cyclical',35000],
+['ZYDUSLIFE.NS','Zydus Lifesciences','Healthcare',55000],
+['TORNTPHARM.NS','Torrent Pharmaceuticals','Healthcare',70000],
+['LUPIN.NS','Lupin','Healthcare',55000],
+['AUROPHARMA.NS','Aurobindo Pharma','Healthcare',45000],
+['SRF.NS','SRF','Basic Materials',55000],
+['PIIND.NS','PI Industries','Basic Materials',40000],
+['UPL.NS','UPL','Basic Materials',30000],
+['COROMANDEL.NS','Coromandel International','Basic Materials',30000],
+['CONCOR.NS','Container Corp of India','Industrials',55000],
+['HINDZINC.NS','Hindustan Zinc','Basic Materials',145000],
+['NMDC.NS','NMDC','Basic Materials',60000],
+['SAIL.NS','Steel Authority of India','Basic Materials',40000],
+['JSPL.NS','Jindal Steel & Power','Basic Materials',80000],
+['MARICO.NS','Marico','Consumer Defensive',60000],
+['DABUR.NS','Dabur India','Consumer Defensive',80000],
+['GODREJCP.NS','Godrej Consumer Products','Consumer Defensive',80000],
+['COLPAL.NS','Colgate-Palmolive India','Consumer Defensive',55000],
+['MCDOWELL-N.NS','United Spirits','Consumer Defensive',40000],
+['TATAPOWER.NS','Tata Power','Utilities',100000],
+['ADANIPOWER.NS','Adani Power','Utilities',180000],
+['ADANIGREEN.NS','Adani Green Energy','Utilities',200000],
+['GAIL.NS','GAIL India','Energy',100000],
+['NHPC.NS','NHPC','Utilities',80000],
+// ── NIFTY MIDCAP 100 ──
+['MUTHOOTFIN.NS','Muthoot Finance','Financial Services',60000],
+['CHOLAFIN.NS','Cholamandalam Investment','Financial Services',60000],
+['IDFCFIRSTB.NS','IDFC First Bank','Financial Services',40000],
+['FEDERALBNK.NS','Federal Bank','Financial Services',40000],
+['BANDHANBNK.NS','Bandhan Bank','Financial Services',35000],
+['KARURVYSYA.NS','Karur Vysya Bank','Financial Services',15000],
+['CITYUNIONB.NS','City Union Bank','Financial Services',12000],
+['LICHSGFIN.NS','LIC Housing Finance','Financial Services',30000],
+['SUNDARMFIN.NS','Sundaram Finance','Financial Services',25000],
+['MAXFIN.NS','Max Financial Services','Financial Services',30000],
+['BAJAJHFL.NS','Bajaj Housing Finance','Financial Services',55000],
+['CREDITACC.NS','CreditAccess Grameen','Financial Services',15000],
+['MFSL.NS','Max Financial Services','Financial Services',30000],
+['SBICARD.NS','SBI Cards and Payment','Financial Services',65000],
+['PAYTM.NS','One97 Communications','Financial Services',30000],
+['ANGELONE.NS','Angel One','Financial Services',18000],
+['BSE.NS','BSE','Financial Services',20000],
+['CDSL.NS','CDSL','Financial Services',20000],
+['MCX.NS','Multi Commodity Exchange','Financial Services',12000],
+['CAMS.NS','Computer Age Management','Financial Services',15000],
+['360ONE.NS','360 ONE WAM','Financial Services',28000],
+['NUVAMA.NS','Nuvama Wealth Management','Financial Services',18000],
+['IIFL.NS','IIFL Finance','Financial Services',18000],
+['JMFINANCIL.NS','JM Financial','Financial Services',10000],
+['MPHASIS.NS','Mphasis','Information Technology',40000],
+['COFORGE.NS','Coforge','Information Technology',30000],
+['PERSISTENT.NS','Persistent Systems','Information Technology',50000],
+['KPITTECH.NS','KPIT Technologies','Information Technology',35000],
+['TATAELXSI.NS','Tata Elxsi','Information Technology',30000],
+['HAPPYFORGE.NS','Happy Forgings','Industrials',8000],
+['NAUKRI.NS','Info Edge India','Communication Services',65000],
+['INDIAMART.NS','IndiaMART InterMesh','Communication Services',12000],
+['ZEEL.NS','Zee Entertainment','Communication Services',10000],
+['SUNTV.NS','Sun TV Network','Communication Services',20000],
+['PVRINOX.NS','PVR Inox','Consumer Cyclical',12000],
+['PAGEIND.NS','Page Industries','Consumer Cyclical',35000],
+['TATACOMM.NS','Tata Communications','Communication Services',35000],
+['JUBLFOOD.NS','Jubilant Foodworks','Consumer Cyclical',30000],
+['DEVYANI.NS','Devyani International','Consumer Cyclical',15000],
+['WESTLIFE.NS','Westlife Foodworld','Consumer Cyclical',8000],
+['SAPPHIRE.NS','Sapphire Foods','Consumer Cyclical',8000],
+['GLAXO.NS','GlaxoSmithKline Pharma','Healthcare',25000],
+['PFIZER.NS','Pfizer India','Healthcare',20000],
+['ABBOTINDIA.NS','Abbott India','Healthcare',30000],
+['ALKEM.NS','Alkem Laboratories','Healthcare',35000],
+['IPCALAB.NS','IPCA Laboratories','Healthcare',20000],
+['NATCOPHARM.NS','Natco Pharma','Healthcare',15000],
+['GRANULES.NS','Granules India','Healthcare',12000],
+['LAURUSLABS.NS','Laurus Labs','Healthcare',15000],
+['SYNGENE.NS','Syngene International','Healthcare',15000],
+['LALPATHLAB.NS','Dr Lal Pathlabs','Healthcare',15000],
+['FORTIS.NS','Fortis Healthcare','Healthcare',30000],
+['MAXHEALTH.NS','Max Healthcare','Healthcare',50000],
+['NH.NS','Narayana Hrudayalaya','Healthcare',20000],
+['KIMS.NS','Krishna Institute Medical','Healthcare',15000],
+['APOLLOHOSP.NS','Apollo Hospitals','Healthcare',80000],
+['RAINBOW.NS','Rainbow Childrens Medicare','Healthcare',8000],
+['AARTI.NS','Aarti Industries','Basic Materials',20000],
+['DEEPAKNITR.NS','Deepak Nitrite','Basic Materials',25000],
+['NAVINFLUOR.NS','Navin Fluorine','Basic Materials',15000],
+['VINATIORGA.NS','Vinati Organics','Basic Materials',12000],
+['GUJFLUORO.NS','Gujarat Fluorochemicals','Basic Materials',30000],
+['CLEAN.NS','Clean Science Technology','Basic Materials',12000],
+['FINEORG.NS','Fine Organic Industries','Basic Materials',10000],
+['NOCIL.NS','NOCIL','Basic Materials',5000],
+['GALAXYSURF.NS','Galaxy Surfactants','Basic Materials',8000],
+['BALAMINES.NS','Balaji Amines','Basic Materials',8000],
+['INDIGOPNTS.NS','Indigo Paints','Basic Materials',10000],
+['KANSAINER.NS','Kansai Nerolac Paints','Basic Materials',20000],
+['AKZOINDIA.NS','Akzo Nobel India','Basic Materials',12000],
+['JKCEMENT.NS','JK Cement','Basic Materials',20000],
+['RAMCOCEM.NS','Ramco Cements','Basic Materials',20000],
+['AMBUJACEM.NS','Ambuja Cements','Basic Materials',100000],
+['ACCLTD.NS','ACC','Basic Materials',40000],
+['NUVOCO.NS','Nuvoco Vistas Corp','Basic Materials',8000],
+['STARCEMENT.NS','Star Cement','Basic Materials',8000],
+['HEIDELBERG.NS','HeidelbergCement India','Basic Materials',8000],
+['TATACHEM.NS','Tata Chemicals','Basic Materials',25000],
+['ATUL.NS','Atul','Basic Materials',20000],
+['SUDARSCHEM.NS','Sudarshan Chemical','Basic Materials',8000],
+['ROSSARI.NS','Rossari Biotech','Basic Materials',5000],
+['FROG.NS','Frog Cellsat','Basic Materials',2000],
+['BOSCHLTD.NS','Bosch','Consumer Cyclical',90000],
+['BHARATFORG.NS','Bharat Forge','Industrials',40000],
+['APOLLOTYRE.NS','Apollo Tyres','Consumer Cyclical',30000],
+['MRF.NS','MRF','Consumer Cyclical',50000],
+['CEATLTD.NS','CEAT','Consumer Cyclical',15000],
+['BALKRISIND.NS','Balkrishna Industries','Consumer Cyclical',40000],
+['EXIDEIND.NS','Exide Industries','Consumer Cyclical',25000],
+['SONACOMS.NS','Sona BLW Precision','Consumer Cyclical',20000],
+['TIINDIA.NS','Tube Investments of India','Consumer Cyclical',35000],
+['SCHAEFFLER.NS','Schaeffler India','Consumer Cyclical',20000],
+['SKFINDIA.NS','SKF India','Industrials',18000],
+['TIMKEN.NS','Timken India','Industrials',15000],
+['MOTHERSON.NS','Samvardhana Motherson','Consumer Cyclical',55000],
+['SUNDRMFAST.NS','Sundram Fasteners','Consumer Cyclical',15000],
+['ENDURANCE.NS','Endurance Technologies','Consumer Cyclical',20000],
+['SUPRAJIT.NS','Suprajit Engineering','Consumer Cyclical',8000],
+['MINDA.NS','Uno Minda','Consumer Cyclical',25000],
+['STARHEALTH.NS','Star Health Insurance','Financial Services',35000],
+['GODIGIT.NS','Go Digit Insurance','Financial Services',20000],
+['ICICIGI.NS','ICICI Lombard','Financial Services',60000],
+['HDFCAMC.NS','HDFC AMC','Financial Services',70000],
+['UTIAMC.NS','UTI AMC','Financial Services',15000],
+['NIPPONLIFE.NS','Nippon Life AMC','Financial Services',25000],
+['ABSLAMC.NS','Aditya Birla Sun Life AMC','Financial Services',15000],
+['POLYMED.NS','Poly Medicure','Healthcare',12000],
+['MEDANTA.NS','Global Health Medanta','Healthcare',20000],
+['YATHARTH.NS','Yatharth Hospital','Healthcare',5000],
+['DIXON.NS','Dixon Technologies','Consumer Cyclical',35000],
+['AMBER.NS','Amber Enterprises','Consumer Cyclical',12000],
+['KAYNES.NS','Kaynes Technology','Information Technology',15000],
+['SYRMA.NS','Syrma SGS Technology','Information Technology',8000],
+['PGEL.NS','PG Electroplast','Consumer Cyclical',8000],
+['VOLTAS.NS','Voltas','Consumer Cyclical',30000],
+['BLUESTARCO.NS','Blue Star','Consumer Cyclical',20000],
+['WHIRLPOOL.NS','Whirlpool of India','Consumer Cyclical',8000],
+['CROMPTON.NS','Crompton Greaves Consumer','Consumer Cyclical',20000],
+['ORIENTELEC.NS','Orient Electric','Consumer Cyclical',5000],
+['BATAINDIA.NS','Bata India','Consumer Cyclical',15000],
+['RELAXO.NS','Relaxo Footwear','Consumer Cyclical',8000],
+['METROBRAND.NS','Metro Brands','Consumer Cyclical',20000],
+['CAMPUS.NS','Campus Activewear','Consumer Cyclical',8000],
+['KPRMILL.NS','KPR Mill','Consumer Cyclical',20000],
+['RAYMOND.NS','Raymond','Consumer Cyclical',15000],
+['TRIDENT.NS','Trident','Consumer Cyclical',15000],
+['VEDANT.NS','Vedant Fashions','Consumer Cyclical',15000],
+['ABFRL.NS','Aditya Birla Fashion Retail','Consumer Cyclical',15000],
+['SHOPERSTOP.NS','Shoppers Stop','Consumer Cyclical',8000],
+['VMART.NS','V-Mart Retail','Consumer Cyclical',8000],
+['KALYAN.NS','Kalyan Jewellers','Consumer Cyclical',40000],
+['SENCO.NS','Senco Gold','Consumer Cyclical',8000],
+['TTKPRESTIG.NS','TTK Prestige','Consumer Cyclical',8000],
+['PRESTIGE.NS','Prestige Estates','Real Estate',45000],
+['PHOENIXLTD.NS','The Phoenix Mills','Real Estate',55000],
+['BRIGADE.NS','Brigade Enterprises','Real Estate',20000],
+['SOBHA.NS','Sobha','Real Estate',15000],
+['GODREJPROP.NS','Godrej Properties','Real Estate',60000],
+['MAHLIFE.NS','Mahindra Lifespace','Real Estate',8000],
+['KOLTEPATIL.NS','Kolte-Patil Developers','Real Estate',8000],
+['SUNTECK.NS','Sunteck Realty','Real Estate',8000],
+['ARVINDFASN.NS','Arvind Fashions','Consumer Cyclical',5000],
+['ARVIND.NS','Arvind','Consumer Cyclical',8000],
+['WELSPUNLIV.NS','Welspun Living','Consumer Cyclical',12000],
+['RUPA.NS','Rupa & Company','Consumer Cyclical',5000],
+['DOLLAR.NS','Dollar Industries','Consumer Cyclical',5000],
+['BIKAJI.NS','Bikaji Foods','Consumer Defensive',10000],
+['GODFRYPHLP.NS','Godfrey Phillips','Consumer Defensive',15000],
+['VSTIND.NS','VST Industries','Consumer Defensive',8000],
+['EMAMILTD.NS','Emami','Consumer Defensive',25000],
+['JYOTHYLAB.NS','Jyothy Labs','Consumer Defensive',10000],
+['HATSUN.NS','Hatsun Agro Product','Consumer Defensive',15000],
+['HERITAGE.NS','Heritage Foods','Consumer Defensive',8000],
+['RADICO.NS','Radico Khaitan','Consumer Defensive',20000],
+['GLOBUSSPR.NS','Globus Spirits','Consumer Defensive',5000],
+['GILLETTE.NS','Gillette India','Consumer Defensive',20000],
+['PGHH.NS','Procter & Gamble Hygiene','Consumer Defensive',35000],
+['TRIVENI.NS','Triveni Engineering','Consumer Defensive',8000],
+['BALRAMCHIN.NS','Balrampur Chini Mills','Consumer Defensive',12000],
+['RENUKA.NS','Shree Renuka Sugars','Consumer Defensive',8000],
+['DHAMPUR.NS','Dhampur Sugar Mills','Consumer Defensive',3000],
+['BAJAJCON.NS','Bajaj Consumer Care','Consumer Defensive',8000],
+['VAIBHAVGBL.NS','Vaibhav Global','Consumer Cyclical',5000],
+['CESC.NS','CESC','Utilities',15000],
+['TORNTPOWER.NS','Torrent Power','Utilities',50000],
+['JSWENERGY.NS','JSW Energy','Utilities',80000],
+['SJVN.NS','SJVN','Utilities',35000],
+['NLCINDIA.NS','NLC India','Energy',25000],
+['HUDCO.NS','HUDCO','Financial Services',40000],
+['PETRONET.NS','Petronet LNG','Energy',40000],
+['MGL.NS','Mahanagar Gas','Energy',18000],
+['IGL.NS','Indraprastha Gas','Energy',25000],
+['GSPL.NS','Gujarat State Petronet','Energy',15000],
+['HINDPETRO.NS','Hindustan Petroleum','Energy',55000],
+['OIL.NS','Oil India','Energy',55000],
+['MRPL.NS','MRPL','Energy',15000],
+['CASTROLIND.NS','Castrol India','Energy',12000],
+['GESHIP.NS','Great Eastern Shipping','Industrials',15000],
+['SCI.NS','Shipping Corp of India','Industrials',12000],
+['BLUEDART.NS','Blue Dart Express','Industrials',20000],
+['SPICEJET.NS','SpiceJet','Industrials',8000],
+['GMRINFRA.NS','GMR Airports Infra','Industrials',55000],
+['IRB.NS','IRB Infrastructure','Industrials',20000],
+['ASHOKA.NS','Ashoka Buildcon','Industrials',12000],
+['NCC.NS','NCC','Industrials',15000],
+['KNRCON.NS','KNR Constructions','Industrials',12000],
+['HGINFRA.NS','H G Infra Engineering','Industrials',8000],
+['PNC.NS','PNC Infratech','Industrials',10000],
+['GPPL.NS','Gujarat Pipavav Port','Industrials',8000],
+['CGPOWER.NS','CG Power and Industrial','Industrials',60000],
+['BHEL.NS','Bharat Heavy Electricals','Industrials',70000],
+['THERMAX.NS','Thermax','Industrials',25000],
+['AIAENG.NS','AIA Engineering','Industrials',20000],
+['CUMMINSIND.NS','Cummins India','Industrials',30000],
+['LAXMIMACH.NS','Lakshmi Machine Works','Industrials',15000],
+['GRINDWELL.NS','Grindwell Norton','Industrials',15000],
+['ELGIEQUIP.NS','Elgi Equipments','Industrials',12000],
+['PRAJ.NS','Praj Industries','Industrials',12000],
+['3MINDIA.NS','3M India','Industrials',25000],
+['HONAUT.NS','Honeywell Automation India','Industrials',20000],
+['ISGEC.NS','ISGEC Heavy Engineering','Industrials',8000],
+['KIRLOSENG.NS','Kirloskar Electric','Industrials',5000],
+['RVNL.NS','Rail Vikas Nigam','Industrials',60000],
+['IRCON.NS','IRCON International','Industrials',20000],
+['RITES.NS','RITES','Industrials',15000],
+['RAILTEL.NS','RailTel Corp','Industrials',15000],
+['NBCC.NS','NBCC India','Industrials',18000],
+['BHARAT.NS','Bharat Dynamics','Industrials',30000],
+['MAZAGON.NS','Mazagon Dock Shipbuilders','Industrials',55000],
+['COCHINSHIP.NS','Cochin Shipyard','Industrials',20000],
+['GRSE.NS','Garden Reach Shipbuilders','Industrials',15000],
+['GARUDA.NS','Garuda Construction','Industrials',3000],
+['HFCL.NS','HFCL','Communication Services',8000],
+['STLTECH.NS','Sterlite Technologies','Communication Services',10000],
+['IDEA.NS','Vodafone Idea','Communication Services',20000],
+['TATAELXSI.NS','Tata Elxsi','Information Technology',30000],
+['RATEGAIN.NS','RateGain Travel Tech','Information Technology',8000],
+['JUSTDIAL.NS','Just Dial','Communication Services',8000],
+['MATRIMONY.NS','Matrimony.com','Communication Services',3000],
+['ZENSARTECH.NS','Zensar Technologies','Information Technology',12000],
+['LTTS.NS','L&T Technology Services','Information Technology',40000],
+['MASTEK.NS','Mastek','Information Technology',10000],
+['BIRLASOFT.NS','Birlasoft','Information Technology',15000],
+['HEXAWARE.NS','Hexaware Technologies','Information Technology',30000],
+['CYIENT.NS','Cyient','Information Technology',15000],
+['NIITLTD.NS','NIIT','Information Technology',5000],
+['INTELLECT.NS','Intellect Design Arena','Information Technology',10000],
+['TANLA.NS','Tanla Platforms','Information Technology',10000],
+['ROUTE.NS','Route Mobile','Information Technology',8000],
+['NEWGEN.NS','Newgen Software','Information Technology',10000],
+['NUCLEUS.NS','Nucleus Software Exports','Information Technology',3000],
+['TCSILTD.NS','TCIL','Information Technology',8000],
+['KFINTECH.NS','KFin Technologies','Financial Services',12000],
+['EDELWEISS.NS','Edelweiss Financial','Financial Services',10000],
+['MOTILALOFS.NS','Motilal Oswal Financial','Financial Services',35000],
+['5PAISA.NS','5Paisa Capital','Financial Services',5000],
+['GEOJITFSL.NS','Geojit Financial Services','Financial Services',3000],
+['ICICIPRULI.NS','ICICI Prudential Life','Financial Services',65000],
+['BAJFINANCE.NS','Bajaj Finance','Financial Services',420000],
+['MASFIN.NS','MAS Financial Services','Financial Services',5000],
+['UGROCAP.NS','Ugro Capital','Financial Services',4000],
+['SPANDANA.NS','Spandana Sphoorty','Financial Services',8000],
+['UJJIVAN.NS','Ujjivan Financial','Financial Services',10000],
+['SURYODAY.NS','Suryoday Small Finance Bank','Financial Services',4000],
+['EQUITASBNK.NS','Equitas Small Finance','Financial Services',8000],
+['AUBANK.NS','AU Small Finance Bank','Financial Services',45000],
+['ESAFSFB.NS','ESAF Small Finance Bank','Financial Services',5000],
+['UTKARSHBNK.NS','Utkarsh Small Finance','Financial Services',5000],
+['JANA.NS','Jana Small Finance Bank','Financial Services',3000],
+['PNBHOUSING.NS','PNB Housing Finance','Financial Services',15000],
+['CANFINHOME.NS','Can Fin Homes','Financial Services',8000],
+['APTUS.NS','Aptus Value Housing','Financial Services',12000],
+['HOMEFIRST.NS','Home First Finance','Financial Services',8000],
+['AAVAS.NS','AAVAS Financiers','Financial Services',12000],
+['APLAPOLLO.NS','APL Apollo Tubes','Basic Materials',35000],
+['JINDALSAW.NS','Jindal Saw','Basic Materials',15000],
+['WELCORP.NS','Welspun Corp','Basic Materials',15000],
+['NATIONALUM.NS','National Aluminium','Basic Materials',30000],
+['HINDCOPPER.NS','Hindustan Copper','Basic Materials',15000],
+['MOIL.NS','MOIL','Basic Materials',12000],
+['MSTCLTD.NS','MSTC','Basic Materials',5000],
+['KIOCL.NS','KIOCL','Basic Materials',8000],
+['MGLAMINES.NS','MGL Amines','Basic Materials',2000],
+['SUMICHEM.NS','Sumitomo Chemical India','Basic Materials',12000],
+['MONSANTO.NS','Bayer CropScience','Basic Materials',10000],
+['DHANUKA.NS','Dhanuka Agritech','Basic Materials',8000],
+['RALLIS.NS','Rallis India','Basic Materials',8000],
+['CHAMBALFERT.NS','Chambal Fertilisers','Basic Materials',15000],
+['FACT.NS','Fertilisers and Chemicals Travancore','Basic Materials',8000],
+['RCF.NS','Rashtriya Chemicals','Basic Materials',10000],
+['GSFC.NS','Gujarat State Fertilizers','Basic Materials',12000],
+['NFL.NS','National Fertilizers','Basic Materials',8000],
+['GNFC.NS','Gujarat Narmada Valley','Basic Materials',10000],
+['DEEPAKNTR.NS','Deepak Nitrite','Basic Materials',25000],
+['PCBL.NS','PCBL','Basic Materials',10000],
+['THIRUMALCHM.NS','Thirumalai Chemicals','Basic Materials',3000],
+['LXCHEM.NS','Laxmi Organic Industries','Basic Materials',8000],
+['TATACHEM.NS','Tata Chemicals','Basic Materials',25000],
+['GHCL.NS','GHCL','Basic Materials',8000],
+['ARCHIES.NS','Archies','Consumer Cyclical',1000],
+['JKTYRE.NS','JK Tyre & Industries','Consumer Cyclical',8000],
+['TVSMOTOR.NS','TVS Motor Company','Consumer Cyclical',65000],
+['ESCORTS.NS','Escorts Kubota','Consumer Cyclical',30000],
+['FORCEMOT.NS','Force Motors','Consumer Cyclical',8000],
+['MAHINDCIE.NS','Mahindra CIE Automotive','Consumer Cyclical',12000],
+['GABRIEL.NS','Gabriel India','Consumer Cyclical',5000],
+['UCALENERGY.NS','UCAL Energy','Consumer Cyclical',2000],
+['SUBROS.NS','Subros','Consumer Cyclical',5000],
+['MINDA.NS','Uno Minda','Consumer Cyclical',25000],
+['UNOMINDA.NS','Uno Minda','Consumer Cyclical',25000],
+['FIEMIND.NS','Fiem Industries','Consumer Cyclical',5000],
+['LUMAXTECH.NS','Lumax Auto Technologies','Consumer Cyclical',5000],
+['LUMAXIND.NS','Lumax Industries','Consumer Cyclical',5000],
+['JBM.NS','JBM Auto','Consumer Cyclical',8000],
+['SPARC.NS','Sun Pharma Advanced Research','Healthcare',8000],
+['SUVEN.NS','Suven Pharmaceuticals','Healthcare',12000],
+['LICI.NS','Life Insurance Corp','Financial Services',600000],
+['SHRIRAMFIN.NS','Shriram Finance','Financial Services',90000],
+['BAJAJHFL.NS','Bajaj Housing Finance','Financial Services',55000],
+['MANAPPURAM.NS','Manappuram Finance','Financial Services',18000],
+['MUTHOOTCAP.NS','Muthoot Capital Services','Financial Services',3000],
+['M%26MFIN.NS','Mahindra and Mahindra Financial','Financial Services',25000],
+['POONAWALLA.NS','Poonawalla Fincorp','Financial Services',25000],
+['LTFH.NS','L&T Finance Holdings','Financial Services',35000],
+['SATIN.NS','Satin Creditcare Network','Financial Services',3000],
+['ARMAN.NS','Arman Financial','Financial Services',2000],
+['FUSION.NS','Fusion Micro Finance','Financial Services',5000],
+['DVLASSET.NS','DVL Assets','Financial Services',2000],
+['AFFLE.NS','Affle India','Information Technology',12000],
+['INFOBEAN.NS','InfoBeans Technologies','Information Technology',3000],
+['DATAMATICS.NS','Datamatics Global','Information Technology',5000],
+['TATATECH.NS','Tata Technologies','Information Technology',30000],
+['HAPPYMINDS.NS','Happiest Minds Technologies','Information Technology',10000],
+['LATENTVIEW.NS','Latent View Analytics','Information Technology',8000],
+['SAKSOFT.NS','Saksoft','Information Technology',2000],
+['MPHASIS.NS','Mphasis','Information Technology',40000],
+['RPOWER.NS','Reliance Power','Utilities',15000],
+['ADANIENSOL.NS','Adani Energy Solutions','Utilities',55000],
+['TORNTPOWER.NS','Torrent Power','Utilities',50000],
+['CESC.NS','CESC','Utilities',15000],
+['JSWENERGY.NS','JSW Energy','Utilities',80000],
+['KSKPOWER.NS','KSK Energy Ventures','Utilities',2000],
+['NPTC.NS','NTPC Green Energy','Utilities',80000],
+['INOXWIND.NS','Inox Wind','Utilities',15000],
+['SUZLON.NS','Suzlon Energy','Utilities',45000],
+['RSWM.NS','RSWM','Consumer Cyclical',3000],
+['GOKEX.NS','Gokaldas Exports','Consumer Cyclical',5000],
+['SPORTKING.NS','Sportking India','Consumer Cyclical',3000],
+['NITIRAJ.NS','Nitiraj Engineers','Industrials',1000],
+['ELECON.NS','Elecon Engineering','Industrials',8000],
+['WPIL.NS','WPIL','Industrials',5000],
+['GREENPANEL.NS','Greenpanel Industries','Basic Materials',5000],
+['CENTURYPLY.NS','Century Plyboards India','Basic Materials',12000],
+['GREENPLY.NS','Greenply Industries','Basic Materials',5000],
+['ASTRAL.NS','Astral','Industrials',30000],
+['SUPREMEIND.NS','Supreme Industries','Industrials',25000],
+['CERA.NS','Cera Sanitaryware','Consumer Cyclical',8000],
+['HINDWARE.NS','Hindware Home Innovation','Consumer Cyclical',5000],
+['KAJARIA.NS','Kajaria Ceramics','Consumer Cyclical',12000],
+['ORIENTBELL.NS','Orient Bell','Consumer Cyclical',3000],
+['SOMANYCER.NS','Somany Ceramics','Consumer Cyclical',5000],
+['GREAVESCOT.NS','Greaves Cotton','Industrials',8000],
+['KIRLOSK.NS','Kirloskar Brothers','Industrials',8000],
+['BBTC.NS','Bombay Burmah Trading','Consumer Defensive',8000],
+['TATACONSUM.NS','Tata Consumer Products','Consumer Defensive',80000],
+['KRBL.NS','KRBL','Consumer Defensive',8000],
+['LT.NS','Larsen & Toubro','Industrials',460000],
+['LTTS.NS','L&T Technology Services','Information Technology',40000],
+['JBCHEPHARM.NS','JB Chemicals & Pharma','Healthcare',15000],
+['ERIS.NS','Eris Lifesciences','Healthcare',12000],
+['GLENMARK.NS','Glenmark Pharmaceuticals','Healthcare',20000],
+['WOCKPHARMA.NS','Wockhardt','Healthcare',8000],
+['AJANTPHARM.NS','Ajanta Pharma','Healthcare',20000],
+['SOLARA.NS','Solara Active Pharma','Healthcare',5000],
+['SEQUENT.NS','Sequent Scientific','Healthcare',5000],
+['SMSPHARM.NS','SMS Pharmaceuticals','Healthcare',3000],
+['SHILPAMED.NS','Shilpa Medicare','Healthcare',5000],
+['PRICOLLTD.NS','Pricol','Consumer Cyclical',5000],
+['TATAINVEST.NS','Tata Investment Corp','Financial Services',35000],
+['TATAPOWER.NS','Tata Power','Utilities',100000],
+['HUDCO.NS','Housing and Urban Development','Financial Services',40000],
+['BFUTILITIE.NS','BF Utilities','Utilities',3000],
+['MSUMI.NS','Motherson Sumi Wiring','Consumer Cyclical',15000],
+['SOLARINDS.NS','Solar Industries India','Basic Materials',50000],
+['HBLPOWER.NS','HBL Power Systems','Industrials',10000],
+['DATAPATTNS.NS','Data Patterns India','Industrials',12000],
+['MTAR.NS','MTAR Technologies','Industrials',8000],
+['PARAS.NS','Paras Defence and Space','Industrials',5000],
+['ZEN.NS','Zen Technologies','Industrials',8000],
+['IDEAFORGE.NS','ideaForge Technology','Industrials',5000],
+['DRONEAERO.NS','Drone Aero','Industrials',2000],
+['TANGI.NS','Tangi Semiconductors','Information Technology',2000],
+['DCXSYS.NS','DCX Systems','Industrials',8000],
+['ABSLAMC.NS','Aditya Birla Sun Life AMC','Financial Services',15000],
+['ICICIPRULI.NS','ICICI Prudential Life','Financial Services',65000],
+['SBICARD.NS','SBI Cards','Financial Services',65000],
+['POLICYHOLDR.NS','Policy Holder','Financial Services',5000],
+['MEDPLUS.NS','Medplus Health Services','Healthcare',8000],
+['VIJAYA.NS','Vijaya Diagnostic Centre','Healthcare',8000],
+['METROPOLIS.NS','Metropolis Healthcare','Healthcare',10000],
+['THYROCARE.NS','Thyrocare Technologies','Healthcare',5000],
+['KRSNAA.NS','Krsnaa Diagnostics','Healthcare',5000],
+['ORCHPHARMA.NS','Orchid Pharma','Healthcare',5000],
+['GLFL.NS','Gujarat Lease Financing','Financial Services',1000],
+['GOLDBEES.NS','Nippon India Gold ETF','Financial Services',50000],
+['INDIGRID.NS','IndiGrid','Utilities',8000],
+['POWERMECH.NS','Power Mech Projects','Industrials',5000],
+['GMMPFAUDLR.NS','GMM Pfaudler','Industrials',5000],
+['TEXRAIL.NS','Texmaco Rail & Engineering','Industrials',5000],
+['TEXINFRA.NS','Texmaco Infrastructure','Industrials',3000],
+['TITAGARH.NS','Titagarh Rail Systems','Industrials',10000],
+['KERNEX.NS','Kernex Microsystems','Industrials',3000],
+['IRFC.NS','Indian Railway Finance','Financial Services',190000],
+['RVNL.NS','Rail Vikas Nigam','Industrials',60000],
+['IRCON.NS','IRCON International','Industrials',20000],
+['SSWL.NS','Steel Strips Wheels','Consumer Cyclical',5000],
+['MANGLMCMT.NS','Mangalam Cement','Basic Materials',5000],
+['DBCORP.NS','D B Corp','Communication Services',5000],
+['JAGRAN.NS','Jagran Prakashan','Communication Services',5000],
+['NDTV.NS','NDTV','Communication Services',8000],
+['TV18BRDCST.NS','TV18 Broadcast','Communication Services',10000],
+['NETWORK18.NS','Network18 Media','Communication Services',10000],
+['HINDMOTORS.NS','Hindustan Motors','Consumer Cyclical',2000],
+['HMVL.NS','Hindustan Media Ventures','Communication Services',3000],
+['EVEREADY.NS','Eveready Industries','Consumer Cyclical',5000],
+['GODFRYPHLP.NS','Godfrey Phillips India','Consumer Defensive',15000],
+['IEX.NS','Indian Energy Exchange','Financial Services',12000],
+['PSPPROJECT.NS','PSP Projects','Industrials',5000],
+['AHLUCONT.NS','Ahluwalia Contracts','Industrials',8000],
+['JPASSOCIAT.NS','Jaiprakash Associates','Real Estate',8000],
+['UNITECH.NS','Unitech','Real Estate',5000],
+['OBEROIRLTY.NS','Oberoi Realty','Real Estate',50000],
+['EQUITAS.NS','Equitas Holdings','Financial Services',8000],
+['UJJIVANSFB.NS','Ujjivan Small Finance Bank','Financial Services',10000],
+['DCBBANK.NS','DCB Bank','Financial Services',8000],
+['SOUTHBANK.NS','South Indian Bank','Financial Services',8000],
+['TMVL.NS','Tamilnad Mercantile Bank','Financial Services',10000],
+['KARNATAKA.NS','Karnataka Bank','Financial Services',8000],
+['DHANBANK.NS','Dhanlaxmi Bank','Financial Services',2000],
+['LAOPALA.NS','La Opala RG','Consumer Cyclical',5000],
+['BOMDYEING.NS','Bombay Dyeing','Consumer Cyclical',8000],
+['CENTURY.NS','Century Textiles','Consumer Cyclical',15000],
+['VARDHMAN.NS','Vardhman Textiles','Consumer Cyclical',15000],
+['WELSPUNIND.NS','Welspun India','Consumer Cyclical',12000],
+['HIMATSEIDE.NS','Himatsingka Seide','Consumer Cyclical',5000],
+['GOKALDAS.NS','Gokaldas Exports','Consumer Cyclical',5000],
+['SPAL.NS','S P Apparels','Consumer Cyclical',3000],
+['PCJEWELLER.NS','PC Jeweller','Consumer Cyclical',10000],
+['RAJESHEXPO.NS','Rajesh Exports','Consumer Cyclical',10000],
+['TBZL.NS','Tribhovandas Bhimji Zaveri','Consumer Cyclical',5000],
+['GOLDIAM.NS','Goldiam International','Consumer Cyclical',3000],
+['TITAN.NS','Titan Company','Consumer Cyclical',290000],
+['MANYAVAR.NS','Vedant Fashions','Consumer Cyclical',15000],
+['NUVOCO.NS','Nuvoco Vistas','Basic Materials',8000],
+['JKPAPER.NS','JK Paper','Basic Materials',8000],
+['WSTCSTPAPR.NS','West Coast Paper','Basic Materials',5000],
+['TNPL.NS','Tamil Nadu Newsprint','Basic Materials',5000],
+['IPAPPM.NS','International Paper APPM','Basic Materials',3000],
+['EMUDHRA.NS','eMudhra','Information Technology',5000],
+['SECURKLOUD.NS','SecureKloud Technologies','Information Technology',3000],
+['NETLINK.NS','Net Link Technologies','Information Technology',2000],
+['INFY.NS','Infosys','Information Technology',620000],
+['FSL.NS','Firstsource Solutions','Information Technology',12000],
+['ECLERX.NS','eClerx Services','Information Technology',10000],
+['EXLSERVICE.NS','ExlService Holdings','Information Technology',5000],
+['IKIO.NS','IKIO Lighting','Industrials',3000],
+['INOXINDIA.NS','Inox India','Industrials',8000],
+['SWSOLAR.NS','Sterling and Wilson Solar','Utilities',8000],
+['WEBSOL.NS','Websol Energy System','Utilities',5000],
+['GOLDENSOLR.NS','Golden Solar','Utilities',3000],
+['WAAREEENER.NS','Waaree Energies','Utilities',35000],
+['PREMIER.NS','Premier','Consumer Cyclical',2000],
+['INFOEDGE.NS','Info Edge India','Communication Services',65000],
+['ZOMATO.NS','Zomato','Consumer Cyclical',200000],
+['NYKAA.NS','Nykaa FSN','Consumer Cyclical',35000],
+['EASEMYTRIP.NS','Easy Trip Planners','Consumer Cyclical',8000],
+['YATRA.NS','Yatra Online','Consumer Cyclical',3000],
+['CARTRADE.NS','CarTrade Tech','Consumer Cyclical',5000],
+['POLICYBZR.NS','PB Fintech PolicyBazaar','Financial Services',35000],
+['DELHIVERY.NS','Delhivery','Industrials',20000],
+['XPRESSBEES.NS','XpressBees','Industrials',5000],
+['HAPPYFORGE.NS','Happy Forgings','Industrials',8000],
+['TECHNO.NS','Techno Electric & Engineering','Industrials',12000],
+['KEC.NS','KEC International','Industrials',25000],
+['KALPATPOWR.NS','Kalpataru Power Transmission','Industrials',20000],
+['VOLTAMP.NS','Voltamp Transformers','Industrials',8000],
+['TRIL.NS','Transformers & Rectifiers','Industrials',5000],
+['POWERGRID.NS','Power Grid Corp','Utilities',250000],
+['NTPC.NS','NTPC','Utilities',280000],
+['NHPC.NS','NHPC','Utilities',80000],
+['SJVN.NS','SJVN','Utilities',35000],
+['ADANIGREEN.NS','Adani Green Energy','Utilities',200000],
+['STERLINWIL.NS','Sterling & Wilson Renewable','Utilities',8000],
+['INOXWIND.NS','Inox Wind','Utilities',15000],
+['SUZLON.NS','Suzlon Energy','Utilities',45000],
+['PVRINOX.NS','PVR Inox','Consumer Cyclical',12000],
+['DELHIBY.NS','Delhi Duty Free Services','Consumer Cyclical',3000],
+['MAHINDRA.NS','Mahindra Holidays','Consumer Cyclical',8000],
+['TTML.NS','Tata Teleservices','Communication Services',8000],
+['TEJASNET.NS','Tejas Networks','Communication Services',5000],
+['ONMOBILE.NS','OnMobile Global','Communication Services',3000],
+['QUICKHEAL.NS','Quick Heal Technologies','Information Technology',3000],
+['FINPIPE.NS','Finolex Industries','Industrials',12000],
+['ASTRAL.NS','Astral','Industrials',30000],
+['PRINCEPIPE.NS','Prince Pipes & Fittings','Industrials',8000],
+['BANSWRAS.NS','Banswara Syntex','Consumer Cyclical',2000],
+['KITEX.NS','Kitex Garments','Consumer Cyclical',3000],
+['NIITIND.NS','NIIT','Information Technology',5000],
+['CRISIL.NS','CRISIL','Financial Services',20000],
+['ICRA.NS','ICRA','Financial Services',8000],
+['CARERATING.NS','CARE Ratings','Financial Services',5000],
+['INFOMERICS.NS','Infomerics Valuation','Financial Services',2000],
+['BDL.NS','Bharat Dynamics','Industrials',30000],
+['ASTRA.NS','Astra Microwave Products','Industrials',8000],
+['ELECTRONC.NS','Electronics Corp of India','Industrials',5000],
+['CENTUM.NS','Centum Electronics','Industrials',3000],
+['SOLARINDS.NS','Solar Industries India','Basic Materials',50000],
+['APOLLOMICRO.NS','Apollo Micro Systems','Industrials',5000],
+['PRAXIS.NS','Praxis Home Retail','Consumer Cyclical',3000],
+['V2RETAIL.NS','V2 Retail','Consumer Cyclical',3000],
+['NYKAA.NS','Nykaa','Consumer Cyclical',35000],
+['IXIGO.NS','Le Travenues Technology ixigo','Consumer Cyclical',8000],
+['MAMAEARTH.NS','Honasa Consumer Mamaearth','Consumer Defensive',8000],
+['MCLEODRUSL.NS','McLeod Russel India','Consumer Defensive',5000],
+['TATACONSUM.NS','Tata Consumer','Consumer Defensive',80000],
+['GNFC.NS','Gujarat Narmada Valley Fert','Basic Materials',10000],
+['PDSL.NS','PDS','Consumer Cyclical',5000],
+['SENCO.NS','Senco Gold','Consumer Cyclical',8000],
+['SULA.NS','Sula Vineyards','Consumer Defensive',5000],
+['UNITDSPR.NS','United Spirits','Consumer Defensive',40000],
+['SKAND.NS','SK Finance','Financial Services',5000],
+['SBFC.NS','SBFC Finance','Financial Services',8000],
+['UGROCAP.NS','Ugro Capital','Financial Services',4000],
+['PAISALO.NS','Paisalo Digital','Financial Services',3000],
+['AROHAN.NS','Arohan Financial Services','Financial Services',3000],
+['NIYOGIN.NS','Niyogin Fintech','Financial Services',2000],
+['BHARATWIRE.NS','Bharat Wire Ropes','Basic Materials',3000],
+['RATNAMANI.NS','Ratnamani Metals & Tubes','Basic Materials',12000],
+['MANALIPETC.NS','Manali Petrochemicals','Basic Materials',3000],
+['TIINDIA.NS','Tube Investments India','Consumer Cyclical',35000],
+['CFOAM.NS','Carbon Foam Technologies','Basic Materials',1000],
+['CHEMCON.NS','Chemcon Specialty Chemicals','Basic Materials',3000],
+['NEOGEN.NS','Neogen Chemicals','Basic Materials',5000],
+['JUBLPHARMA.NS','Jubilant Pharmova','Healthcare',10000],
+['JUBLLIFE.NS','Jubilant Life Sciences','Healthcare',15000],
+['SUVEN.NS','Suven Life Sciences','Healthcare',12000],
+['NEULANDLAB.NS','Neuland Laboratories','Healthcare',10000],
+['DRREDDYS.NS','Dr Reddys Laboratories','Healthcare',110000],
+['BIOCON.NS','Biocon','Healthcare',25000],
+['CONCORD.NS','Concord Biotech','Healthcare',10000],
+['GLAND.NS','Gland Pharma','Healthcare',20000],
+['WINDLAS.NS','Windlas Biotech','Healthcare',5000],
+['SAPPHIRE.NS','Sapphire Foods India','Consumer Cyclical',8000],
+['BARBEQUE.NS','Barbeque Nation Hospitality','Consumer Cyclical',3000],
+['SPECIALITY.NS','Speciality Restaurants','Consumer Cyclical',2000],
+['WONDERLA.NS','Wonderla Holidays','Consumer Cyclical',5000],
+['LEMONTREE.NS','Lemon Tree Hotels','Consumer Cyclical',8000],
+['CHALET.NS','Chalet Hotels','Consumer Cyclical',10000],
+['EIHOTEL.NS','EIH','Consumer Cyclical',20000],
+['TAJGVK.NS','Taj GVK Hotels','Consumer Cyclical',8000],
+['MAHINDHOLIDAY.NS','Club Mahindra','Consumer Cyclical',8000],
+['ORIENTHOTEL.NS','Oriental Hotels','Consumer Cyclical',3000],
+['INDHOTEL.NS','Indian Hotels Co','Consumer Cyclical',60000],
+['ITDC.NS','India Tourism Development','Consumer Cyclical',5000],
+['HONDAPOWER.NS','Honda Power Products','Industrials',3000],
+['IFBIND.NS','IFB Industries','Consumer Cyclical',5000],
+['BAJAJHIND.NS','Bajaj Hindusthan Sugar','Consumer Defensive',5000],
+['SHAKTISUG.NS','Shakti Sugars','Consumer Defensive',2000],
+['DWARIKESH.NS','Dwarikesh Sugar','Consumer Defensive',3000],
+['DHARAMSI.NS','Dharamsi Morarji Chemical','Basic Materials',2000],
+['GGujarat.NS','Gujarat Alkalies','Basic Materials',5000],
+['OCCL.NS','Oriental Carbon & Chemicals','Basic Materials',3000],
+['ALKYLAMINE.NS','Alkyl Amines Chemicals','Basic Materials',8000],
+['ANUPAM.NS','Anupam Rasayan India','Basic Materials',5000],
+['TATAMETALI.NS','Tata Metaliks','Basic Materials',5000],
+['PRAKASH.NS','Prakash Industries','Basic Materials',5000],
+['ELECTROSTL.NS','Electrosteels Castings','Basic Materials',3000],
+['BIMETAL.NS','Bimetal Bearings','Industrials',2000],
+['GRAPHITE.NS','Graphite India','Basic Materials',10000],
+['HEG.NS','HEG','Basic Materials',15000],
+['RAMASTEEL.NS','Rama Steel Tubes','Basic Materials',2000],
+['SILINV.NS','Sil Investments','Financial Services',1000],
+['TVSMOTOR.NS','TVS Motor Company','Consumer Cyclical',65000],
+['BAJAJ-AUTO.NS','Bajaj Auto','Consumer Cyclical',200000],
+['HEROMOTOCO.NS','Hero MotoCorp','Consumer Cyclical',60000],
+['EICHERMOT.NS','Eicher Motors','Consumer Cyclical',120000],
+['ROYALENF.NS','Royal Enfield Eicher','Consumer Cyclical',120000],
+['OLECTRA.NS','Olectra Greentech','Consumer Cyclical',8000],
+['PMC.NS','PMC Industries','Industrials',2000],
+['JINDALPOLY.NS','Jindal Poly Films','Basic Materials',8000],
+['UFLEX.NS','UFLEX','Basic Materials',8000],
+['HUHTAMAKI.NS','Huhtamaki India','Basic Materials',5000],
+['EPL.NS','EPL','Basic Materials',8000],
+['JYOTISTRUC.NS','Jyoti Structures','Industrials',5000],
+['INDIGRID.NS','IndiGrid InvIT','Utilities',8000],
+['IRB.NS','IRB InvIT Fund','Industrials',20000],
+['NHAI.NS','NHAI InvIT','Industrials',15000],
+['STLTECH.NS','STL Sterlite Technologies','Communication Services',10000],
+['TATACOMM.NS','Tata Communications','Communication Services',35000],
+['MTNL.NS','Mahanagar Telephone Nigam','Communication Services',5000],
+['RCFLTD.NS','RCF','Basic Materials',10000],
+['NACLIND.NS','NACL Industries','Basic Materials',3000],
+['PRISMJOINTS.NS','Prism Johnson','Basic Materials',8000],
+['SHALBY.NS','Shalby Multi-Specialty Hospital','Healthcare',5000],
+['CLOUDTAIL.NS','Cloudtail India','Consumer Cyclical',5000],
+['CAMPUS.NS','Campus Activewear','Consumer Cyclical',8000],
+['SHOPCLUES.NS','Clues Network','Consumer Cyclical',2000],
+['NAZARA.NS','Nazara Technologies','Communication Services',8000],
+['NETSCRIBES.NS','Netscribes','Information Technology',2000],
+['HSCL.NS','Himadri Speciality Chemical','Basic Materials',12000],
+['TATAINVEST.NS','Tata Investment Corporation','Financial Services',35000],
+['NARAYANA.NS','Narayana Hrudayalaya','Healthcare',20000],
+['EMSLTD.NS','EMS','Industrials',3000],
+['SINTERCAST.NS','Sintercast','Industrials',2000],
+['RUPA.NS','Rupa & Company','Consumer Cyclical',5000],
+['STYRENIX.NS','Styrenix Performance Materials','Basic Materials',5000],
+['RPSGVENT.NS','RPSG Ventures','Consumer Cyclical',5000],
+['KALYANKJIL.NS','Kalyan Jewellers India','Consumer Cyclical',40000],
+['SAMHI.NS','SAMHI Hotels','Consumer Cyclical',5000],
+['BECTORFOOD.NS','Mrs Bectors Food Specialities','Consumer Defensive',5000],
+['HATSUN.NS','Hatsun Agro Product','Consumer Defensive',15000],
+['PRABHAT.NS','Prabhat Dairy','Consumer Defensive',3000],
+['DODLA.NS','Dodla Dairy','Consumer Defensive',5000],
+['PARAG.NS','Parag Milk Foods','Consumer Defensive',5000],
+['AVEPOINT.NS','AvePoint','Information Technology',5000],
+['GRAVITA.NS','Gravita India','Basic Materials',8000],
+['PONDY.NS','Pondy Oxides & Chemicals','Basic Materials',3000],
+['POLYPLEX.NS','Polyplex Corporation','Basic Materials',8000],
+['NILKAMAL.NS','Nilkamal','Consumer Cyclical',5000],
+['AVSLIMITED.NS','AVS Limited','Consumer Cyclical',2000],
+['SKFINDIA.NS','SKF India','Industrials',18000],
+['SMSPHARMA.NS','SMS Pharmaceuticals','Healthcare',3000],
+['LAURUS.NS','Laurus Labs','Healthcare',15000],
+['GLENMARK.NS','Glenmark Pharma','Healthcare',20000],
+['SANOFI.NS','Sanofi India','Healthcare',15000],
+['MERCK.NS','Merck India','Healthcare',10000],
+['NOVARTIS.NS','Novartis India','Healthcare',5000],
+['MARKSANS.NS','Marksans Pharma','Healthcare',8000],
+['ARTODN.NS','Artion','Healthcare',2000],
+['MEDPLUSHL.NS','MedPlus Health Services','Healthcare',8000],
+];
+];
+
+
+// ── SUPABASE CLIENT ──────────────────────────────────────────
+let SB = null;
+function initSupabase() {
+  if (!CFG.sbUrl || !CFG.sbKey) return false;
+  SB = { url: CFG.sbUrl.replace(/\/$/, ''), key: CFG.sbKey };
+  return true;
+}
+
+async function sbGet(table, params = '') {
+  if (!SB) return localGet(table);
+  const url = `${SB.url}/rest/v1/${table}${params}`;
+  const r = await fetch(url, { headers: { apikey: SB.key, Authorization: `Bearer ${SB.key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' } });
+  if (!r.ok) throw new Error(`SB GET ${table}: ${r.status}`);
+  return r.json();
+}
+
+async function sbPost(table, body) {
+  if (!SB) return localPost(table, body);
+  const r = await fetch(`${SB.url}/rest/v1/${table}`, {
+    method: 'POST', headers: { apikey: SB.key, Authorization: `Bearer ${SB.key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) { const e = await r.text(); throw new Error(`SB POST ${table}: ${e}`); }
+  return r.json();
+}
+
+async function sbPatch(table, id, body, idCol = 'id') {
+  if (!SB) return localPatch(table, id, body, idCol);
+  const r = await fetch(`${SB.url}/rest/v1/${table}?${idCol}=eq.${id}`, {
+    method: 'PATCH', headers: { apikey: SB.key, Authorization: `Bearer ${SB.key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`SB PATCH ${table}: ${r.status}`);
+  return r.json();
+}
+
+async function sbDelete(table, id, idCol = 'id') {
+  if (!SB) return localDelete(table, id, idCol);
+  const r = await fetch(`${SB.url}/rest/v1/${table}?${idCol}=eq.${id}`, {
+    method: 'DELETE', headers: { apikey: SB.key, Authorization: `Bearer ${SB.key}` }
+  });
+  return r.ok;
+}
+
+// ── LOCAL STORAGE FALLBACK ───────────────────────────────────
+const LOCAL_DB = {};
+function localGet(table) { return Promise.resolve(LOCAL_DB[table] || []); }
+function localPost(table, body) {
+  if (!LOCAL_DB[table]) LOCAL_DB[table] = [];
+  const item = { id: crypto.randomUUID(), ...body };
+  LOCAL_DB[table].push(item);
+  saveLocal();
+  return Promise.resolve([item]);
+}
+function localPatch(table, id, body, idCol = 'id') {
+  if (!LOCAL_DB[table]) return Promise.resolve([]);
+  LOCAL_DB[table] = LOCAL_DB[table].map(r => r[idCol] === id ? { ...r, ...body } : r);
+  saveLocal();
+  return Promise.resolve([]);
+}
+function localDelete(table, id, idCol = 'id') {
+  if (!LOCAL_DB[table]) return Promise.resolve(true);
+  LOCAL_DB[table] = LOCAL_DB[table].filter(r => r[idCol] !== id);
+  saveLocal();
+  return Promise.resolve(true);
+}
+function saveLocal() { localStorage.setItem('nse_live_db', JSON.stringify(LOCAL_DB)); }
+function loadLocal() {
+  const d = localStorage.getItem('nse_live_db');
+  if (d) Object.assign(LOCAL_DB, JSON.parse(d));
+}
+
+// ── YAHOO FINANCE PROXY ──────────────────────────────────────
+function getProxyUrl() {
+  // Use Supabase edge function if configured, else try direct (may fail on CORS)
+  if (CFG.sbUrl) return `${CFG.sbUrl.replace(/\/$/, '')}/functions/v1/${CFG.proxyFnName || 'yahoo-proxy'}`;
+  return 'https://query1.finance.yahoo.com'; // fallback - likely to fail
+}
+
+async function fetchChart(symbol, range = '1y', interval = '1d') {
+  const proxy = getProxyUrl();
+  let url;
+  if (CFG.sbUrl) {
+    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}&action=chart`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+  }
+  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`Chart fetch failed: ${r.status}`);
+  return r.json();
+}
+
+async function fetchQuote(symbol) {
+  const proxy = getProxyUrl();
+  let url;
+  if (CFG.sbUrl) {
+    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&action=quote`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+  }
+  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`Quote fetch failed: ${r.status}`);
+  return r.json();
+}
+
+// Parse Yahoo Finance chart response
+function parseChartData(json) {
+  const res = json?.chart?.result?.[0];
+  if (!res) throw new Error('No chart data');
+  const ts = res.timestamp || [];
+  const q = res.indicators?.quote?.[0] || {};
+  return {
+    timestamps: ts,
+    opens: q.open || [],
+    highs: q.high || [],
+    lows: q.low || [],
+    closes: q.close || [],
+    volumes: q.volume || [],
+    meta: res.meta || {}
+  };
+}
+
+// ── STARTUP ──────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  loadLocal();
+  loadConfig();
+  const theme = localStorage.getItem('nse_theme');
+  if (theme === 'light') document.documentElement.classList.add('light');
+  updateMarketNotice();
+});
+
+function loadConfig() {
+  const saved = localStorage.getItem('nse_live_cfg');
+  if (saved) {
+    try { Object.assign(CFG, JSON.parse(saved)); } catch(e) {}
+  }
+  document.getElementById('cfg-name').value = CFG.traderName || '';
+  document.getElementById('cfg-capital').value = CFG.capital || 3000000;
+  document.getElementById('cfg-risk').value = CFG.riskPct || 1;
+  document.getElementById('cfg-cap-min').value = CFG.capMin || 1000;
+  document.getElementById('cfg-cap-max').value = CFG.capMax || '';
+  document.getElementById('cfg-telegram').value = CFG.telegramChatId || '';
+  document.getElementById('cfg-tg-token').value = localStorage.getItem('nse_tg_token') || '';
+  document.getElementById('cfg-sb-url').value = CFG.sbUrl || '';
+  document.getElementById('cfg-proxy-fn').value = CFG.proxyFnName || 'yahoo-proxy';
+  document.getElementById('cfg-sb-key').value = CFG.sbKey || '';
+  document.getElementById('cfg-sector').value = CFG.sector || 'all';
+}
+
+function saveConfig() {
+  CFG.traderName = document.getElementById('cfg-name').value || 'Trader';
+  CFG.capital = parseFloat(document.getElementById('cfg-capital').value) || 3000000;
+  CFG.startCapital = CFG.startCapital || CFG.capital;
+  CFG.riskPct = parseFloat(document.getElementById('cfg-risk').value) || 1;
+  CFG.capMin = parseFloat(document.getElementById('cfg-cap-min').value) || 1000;
+  CFG.capMax = parseFloat(document.getElementById('cfg-cap-max').value) || null;
+  CFG.telegramChatId = document.getElementById('cfg-telegram').value.trim();
+  const tgToken = document.getElementById('cfg-tg-token').value.trim();
+  if (tgToken) localStorage.setItem('nse_tg_token', tgToken);
+  CFG.sbUrl = document.getElementById('cfg-sb-url').value.trim();
+  CFG.proxyFnName = document.getElementById('cfg-proxy-fn').value.trim() || 'yahoo-proxy';
+  CFG.sbKey = document.getElementById('cfg-sb-key').value.trim();
+  CFG.sector = document.getElementById('cfg-sector').value;
+  localStorage.setItem('nse_live_cfg', JSON.stringify(CFG));
+}
+
+function setCapRange(el) {
+  document.querySelectorAll('.cap-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cfg-cap-min').value = el.dataset.min || '';
+  document.getElementById('cfg-cap-max').value = el.dataset.max || '';
+}
+
+function updateMarketNotice() {
+  const now = new Date();
+  const day = now.getDay();
+  const h = now.getHours(), m = now.getMinutes();
+  const mins = h * 60 + m;
+  const isWeekday = day >= 1 && day <= 5;
+  const isMarketHours = mins >= 555 && mins <= 930; // 9:15 - 15:30 IST approx
+  const el = document.getElementById('market-notice');
+  if (isWeekday && isMarketHours) {
+    el.textContent = '🟢 Market Open — Charts show data up to last close. Refresh tomorrow for new candle.';
+    el.style.background = 'rgba(0,200,150,.08)';
+    el.style.borderColor = 'var(--green)';
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = '🔴 Market Closed — Showing last available daily data.';
+    el.style.background = 'rgba(255,69,96,.08)';
+    el.style.borderColor = 'var(--red)';
+    el.style.color = 'var(--red)';
+  }
+}
+
+async function startApp() {
+  saveConfig();
+  initSupabase();
+
+  if (!CFG.sbUrl) {
+    document.getElementById('supabase-notice').style.display = 'block';
+  }
+
+  showScreen('game-screen');
+  initCanvases();
+
+  // Load capital — on first run, save the configured amount to DB
+  try {
+    await loadCapitalFromDB();
+    // If DB returned default or nothing, seed with configured capital
+    if (!CFG.startCapital || CFG.startCapital === 3000000) {
+      const capInput = parseFloat(document.getElementById('cfg-capital')?.value) || 3000000;
+      if (!CFG.startCapital) {
+        CFG.capital = capInput;
+        CFG.startCapital = capInput;
+        await saveCapitalToDB();
+      }
+    }
+  } catch(e) {
+    CFG.capital = parseFloat(document.getElementById('cfg-capital')?.value) || 3000000;
+    CFG.startCapital = CFG.capital;
+  }
+
+  updateCapDisplay();
+
+  try { await loadWatchlist(); } catch(e) { console.warn('Watchlist load failed:', e); }
+  try { await loadPositions(); } catch(e) { console.warn('Positions load failed:', e); }
+
+  updateStats();
+  checkAlerts(); // non-blocking
+
+  showLoading(false);
+
+  // If watchlist has stocks, load the first one automatically
+  const firstWL = _watchlistCache.find(w => w.status === 'watching' || w.status === 'in_trade');
+  if (firstWL) {
+    await loadStock(firstWL.symbol);
+  } else {
+    showLoading(false);
+  }
+}
+
+// ── SCREEN NAV ────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'journal-screen') renderJournal();
+  if (id === 'alerts-screen') renderAlerts();
+  if (id === 'dismissed-screen') renderDismissed();
+}
+
+// ── CANVAS SETUP ──────────────────────────────────────────────
+function initCanvases() {
+  const wrap = document.getElementById('canvas-wrap');
+  const mc = document.getElementById('main-canvas');
+  const dc = document.getElementById('draw-canvas');
+  const vw = document.getElementById('vol-wrap');
+  const vc = document.getElementById('vol-canvas');
+  function resize() {
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    mc.width = dc.width = W; mc.height = dc.height = H;
+    vc.width = vw.clientWidth; vc.height = vw.clientHeight;
+    if (G.currentData) drawAll();
+  }
+  G.mCtx = mc.getContext('2d');
+  G.dCtx = dc.getContext('2d');
+  G.vCtx = vc.getContext('2d');
+  new ResizeObserver(resize).observe(wrap);
+  resize();
+  setupDrawEvents(dc);
+}
+
+// ── LOAD STOCK CHART ─────────────────────────────────────────
+async function loadStock(symbol, skipCache = false) {
+  if (!symbol) return;
+  G.currentSymbol = symbol;
+  showLoading(true, `Loading ${symbol}...`);
+  document.getElementById('scrip-sym').textContent = symbol.replace('.NS','');
+  document.getElementById('scrip-fullname').textContent = '—';
+  try {
+    // Determine Yahoo range based on TF
+    const range = G.currentTF === 'M' ? '5y' : '2y';
+    const interval = G.currentTF === 'D' ? '1d' : G.currentTF === 'W' ? '1wk' : '1mo';
+    const json = await fetchChart(symbol, range, interval);
+    const data = parseChartData(json);
+    G.currentData = data;
+    G.currentMeta = data.meta;
+    // Set view to show last ~120 candles
+    const n = data.closes.length;
+    G.viewStart = Math.max(0, n - 120);
+    drawAll();
+    drawVolume();
+    // Fetch quote for metadata
+    await refreshQuote(symbol);
+    // Update active position info
+    await loadActivePosition(symbol);
+    showLoading(false);
+    // Mark active in watchlist
+    document.querySelectorAll('.wl-item').forEach(el => el.classList.remove('active-wl'));
+    const wlEl = document.querySelector(`.wl-item[data-sym="${symbol}"]`);
+    if (wlEl) wlEl.classList.add('active-wl');
+  } catch(e) {
+    showLoading(false);
+    showNotif('error', '⚠ Data Error', `Could not load ${symbol}: ${e.message}`);
+  }
+}
+
+async function refreshQuote(symbol) {
+  try {
+    const json = await fetchQuote(symbol);
+    const q = json?.quoteResponse?.result?.[0];
+    if (!q) return;
+    const price = q.regularMarketPrice || 0;
+    const chgPct = q.regularMarketChangePercent || 0;
+    const name = q.shortName || q.longName || symbol;
+    const mcap = q.marketCap || 0;
+    const hi52 = q.fiftyTwoWeekHigh || 0;
+    const lo52 = q.fiftyTwoWeekLow || 0;
+    document.getElementById('scrip-fullname').textContent = name;
+    document.getElementById('price-badge').textContent = '₹' + fp(price);
+    document.getElementById('price-badge').style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('chg-badge').textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+    document.getElementById('chg-badge').style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('oi-52').textContent = `${fp(lo52)} – ${fp(hi52)}`;
+    document.getElementById('oi-mcap').textContent = formatMcap(mcap);
+    G.currentMeta = { ...G.currentMeta, price, name, mcap, chgPct, hi52, lo52 };
+  } catch(e) { /* quote fetch failed — non-critical */ }
+}
+
+async function refreshChart() {
+  if (G.currentSymbol) await loadStock(G.currentSymbol, true);
+}
+
+function switchTF(tf) {
+  G.currentTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tf-${tf}`)?.classList.add('active');
+  if (G.currentSymbol) loadStock(G.currentSymbol);
+}
+
+// ── CHART DRAWING ─────────────────────────────────────────────
+function drawAll() {
+  const ctx = G.mCtx;
+  if (!ctx || !G.currentData) return;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const p = G.chartPad;
+  ctx.clearRect(0, 0, W, H);
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim();
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const data = G.currentData;
+  const n = data.closes.length;
+  if (!n) return;
+
+  const viewEnd = n;
+  const viewStart = G.viewStart;
+  const viewCount = viewEnd - viewStart;
+  if (viewCount <= 0) return;
+
+  const chartW = W - p.l - p.r;
+  const chartH = H - p.t - p.b;
+  const cw = Math.max(2, Math.floor(chartW / viewCount) - 1);
+  G.candleW = cw;
+
+  // Find min/max in view
+  let minP = Infinity, maxP = -Infinity;
+  for (let i = viewStart; i < viewEnd; i++) {
+    if (data.lows[i] > 0) minP = Math.min(minP, data.lows[i]);
+    if (data.highs[i] > 0) maxP = Math.max(maxP, data.highs[i]);
+  }
+  if (!isFinite(minP)) return;
+  const pad = (maxP - minP) * 0.05;
+  const priceMin = minP - pad, priceMax = maxP + pad;
+  const priceRange = priceMax - priceMin;
+  G._scaleInfo = { priceMin, priceMax, priceRange, viewStart, viewEnd, chartW, chartH, cw, p };
+
+  function py(price) { return p.t + chartH * (1 - (price - priceMin) / priceRange); }
+  function px(i) { return p.l + (i - viewStart) * (cw + 1) + cw / 2; }
+
+  // Grid
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim();
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  const gridLines = 6;
+  ctx.font = `10px "JetBrains Mono", monospace`;
+  ctx.fillStyle = textColor;
+  for (let g = 0; g <= gridLines; g++) {
+    const price = priceMin + (priceRange * g / gridLines);
+    const y = py(price);
+    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y);
+    ctx.setLineDash([2, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = 'right';
+    ctx.fillText(fp(price), W - 4, y + 3);
+  }
+
+  // X-axis dates
+  ctx.textAlign = 'center';
+  const dateStep = Math.ceil(viewCount / 8);
+  for (let i = viewStart; i < viewEnd; i += dateStep) {
+    const ts = data.timestamps[i];
+    if (!ts) continue;
+    const d = new Date(ts * 1000);
+    const label = G.currentTF === 'D' ? `${d.getDate()}/${d.getMonth()+1}` :
+      G.currentTF === 'W' ? `W${getWeek(d)}` : `${d.toLocaleString('default',{month:'short'})}`;
+    ctx.fillStyle = textColor;
+    ctx.fillText(label, px(i), H - 8);
+  }
+
+  // EMAs
+  const emaColors = { 9: '#f0a500', 21: '#3d9eff', 50: '#ff4560', 200: '#8b5cf6' };
+  [9, 21, 50, 200].forEach(period => {
+    if (!G.emas[period]) return;
+    const ema = calcEMA(data.closes, period);
+    ctx.beginPath(); ctx.strokeStyle = emaColors[period]; ctx.lineWidth = 1.2;
+    let started = false;
+    for (let i = viewStart; i < viewEnd; i++) {
+      if (!ema[i]) continue;
+      const x = px(i), y = py(ema[i]);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  // Position SL / Entry line
+  if (G.openPosition) {
+    const pos = G.openPosition;
+    // Entry line
+    ctx.strokeStyle = 'rgba(0,229,176,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    const ey = py(pos.entry_price);
+    ctx.beginPath(); ctx.moveTo(p.l, ey); ctx.lineTo(W - p.r, ey); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(0,229,176,0.8)'; ctx.textAlign = 'right'; ctx.font = '10px monospace';
+    ctx.fillText(`ENTRY ${fp(pos.entry_price)}`, W - 2, ey - 3);
+    // SL line
+    const sl = pos.trail_sl || pos.stop_loss;
+    ctx.strokeStyle = 'rgba(255,69,96,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    const sy = py(sl);
+    ctx.beginPath(); ctx.moveTo(p.l, sy); ctx.lineTo(W - p.r, sy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,69,96,0.8)'; ctx.textAlign = 'right';
+    ctx.fillText(`SL ${fp(sl)}`, W - 2, sy - 3);
+  }
+
+  // Candles
+  for (let i = viewStart; i < viewEnd; i++) {
+    const o = data.opens[i], h = data.highs[i], l = data.lows[i], c = data.closes[i];
+    if (!o || !c) continue;
+    const x = p.l + (i - viewStart) * (cw + 1);
+    const isUp = c >= o;
+    const col = isUp ? '#00c896' : '#ff4560';
+    const wickX = x + cw / 2;
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(wickX, py(h)); ctx.lineTo(wickX, py(l)); ctx.stroke();
+    ctx.fillStyle = isUp ? col : col;
+    const y1 = py(Math.max(o, c)), y2 = py(Math.min(o, c));
+    const ch = Math.max(1, y2 - y1);
+    if (isUp) { ctx.strokeStyle = col; ctx.strokeRect(x, y1, cw, ch); }
+    else { ctx.fillRect(x, y1, cw, ch); }
+  }
+
+  // Current price line
+  const lastClose = data.closes[n - 1];
+  if (lastClose && lastClose >= priceMin && lastClose <= priceMax) {
+    const y = py(lastClose);
+    ctx.strokeStyle = 'rgba(0,229,176,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([2,4]);
+    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'var(--accent)'; ctx.fillStyle = '#00e5b0';
+    ctx.fillRect(W - p.r, y - 8, p.r, 16);
+    ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+    ctx.fillText(fp(lastClose), W - p.r / 2, y + 4);
+  }
+
+  redrawDrawings();
+  updateOHLC();
+}
+
+function drawVolume() {
+  const ctx = G.vCtx;
+  if (!ctx || !G.currentData) return;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim();
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  const data = G.currentData;
+  const si = G._scaleInfo;
+  if (!si) return;
+  const { viewStart, viewEnd, cw, p } = si;
+  const vols = data.volumes.slice(viewStart, viewEnd).filter(v => v > 0);
+  const maxV = Math.max(...vols);
+  if (!maxV) return;
+  for (let i = viewStart; i < viewEnd; i++) {
+    const v = data.volumes[i];
+    if (!v) continue;
+    const isUp = data.closes[i] >= data.opens[i];
+    const x = p.l + (i - viewStart) * (cw + 1);
+    const bh = (v / maxV) * (H - 14);
+    ctx.fillStyle = isUp ? 'rgba(0,200,150,0.35)' : 'rgba(255,69,96,0.35)';
+    ctx.fillRect(x, H - bh, cw, bh);
+  }
+  // Max vol label
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim();
+  ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  ctx.fillText(fv(maxV), W - 2, 12);
+}
+
+function updateOHLC() {
+  const data = G.currentData;
+  if (!data) return;
+  const n = data.closes.length;
+  if (!n) return;
+  const i = n - 1;
+  const chg = data.closes[i] - data.opens[i];
+  const chgPct = (chg / data.opens[i] * 100).toFixed(2);
+  document.getElementById('oi-o').textContent = fp(data.opens[i]);
+  document.getElementById('oi-h').textContent = fp(data.highs[i]);
+  document.getElementById('oi-l').textContent = fp(data.lows[i]);
+  document.getElementById('oi-c').textContent = fp(data.closes[i]);
+  document.getElementById('oi-v').textContent = fv(data.volumes[i] || 0);
+}
+
+function calcEMA(closes, period) {
+  const ema = [];
+  const k = 2 / (period + 1);
+  let prev = null;
+  for (let i = 0; i < closes.length; i++) {
+    const c = closes[i];
+    if (!c) { ema.push(null); continue; }
+    if (prev === null) {
+      if (i >= period - 1) {
+        const slice = closes.slice(Math.max(0, i - period + 1), i + 1).filter(Boolean);
+        prev = slice.reduce((a, b) => a + b, 0) / slice.length;
+        ema.push(prev);
+      } else ema.push(null);
+    } else {
+      prev = c * k + prev * (1 - k);
+      ema.push(prev);
+    }
+  }
+  return ema;
+}
+
+function toggleEMA(period) {
+  G.emas[period] = !G.emas[period];
+  document.getElementById(`em${period}`)?.classList.toggle('on', G.emas[period]);
+  drawAll();
+}
+
+// ── DRAWING TOOLS ─────────────────────────────────────────────
+function setTool(t) {
+  G.tool = G.tool === t ? null : t;
+  document.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
+  if (G.tool) document.getElementById(`tool-${G.tool}`)?.classList.add('active');
+  document.getElementById('draw-canvas').style.cursor = G.tool ? 'crosshair' : 'default';
+}
+
+function setupDrawEvents(canvas) {
+  let panStart = null;
+  let panViewStart = 0;
+
+  canvas.addEventListener('mousedown', e => {
+    const {x, y} = getCanvasPos(e);
+    if (G.tool) {
+      // Convert pixel to price coords for anchored drawings
+      const pc = pixelToPrice(x, y);
+      G.isDrawing = true;
+      G.drawStart = { x, y, bar: pc.bar, price: pc.price };
+      return;
+    }
+    // Start pan
+    panStart = { x, viewStart: G.viewStart };
+    canvas.style.cursor = 'grabbing';
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    const {x, y} = getCanvasPos(e);
+
+    // Draw crosshair on draw canvas
+    drawCrosshair(x, y);
+
+    if (G.isDrawing && G.drawStart) {
+      // Live preview of drawing
+      redrawDrawings();
+      const dCtx = G.dCtx;
+      dCtx.strokeStyle = 'rgba(0,229,176,0.75)'; dCtx.lineWidth = 1.5;
+      dCtx.setLineDash([5, 4]);
+      dCtx.beginPath(); dCtx.moveTo(G.drawStart.x, G.drawStart.y); dCtx.lineTo(x, y); dCtx.stroke();
+      dCtx.setLineDash([]);
+      return;
+    }
+
+    if (panStart) {
+      // Drag to pan — 1 candle per ~10px
+      const data = G.currentData;
+      if (!data) return;
+      const dx = panStart.x - x;
+      const si = G._scaleInfo;
+      const step = si ? (si.cw + 1) : 10;
+      const shift = Math.round(dx / step);
+      const n = data.closes.length;
+      G.viewStart = Math.max(0, Math.min(n - 20, panViewStart + shift));
+      drawAll(); drawVolume();
+      return;
+    }
+
+    showOHLCForX(x);
+  });
+
+  canvas.addEventListener('mouseup', e => {
+    if (G.isDrawing && G.drawStart) {
+      const {x, y} = getCanvasPos(e);
+      const pc = pixelToPrice(x, y);
+      // Store drawings in price/bar space so they stay after zoom/pan
+      G.drawings.push({
+        type: G.tool,
+        bar1: G.drawStart.bar, price1: G.drawStart.price,
+        bar2: pc.bar, price2: pc.price,
+      });
+      G.isDrawing = false; G.drawStart = null;
+      redrawDrawings();
+    }
+    if (panStart) {
+      panStart = null;
+      panViewStart = G.viewStart;
+      canvas.style.cursor = 'crosshair';
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    panStart = null;
+    G.isDrawing = false;
+    G.drawStart = null;
+    G.dCtx.clearRect(0, 0, G.dCtx.canvas.width, G.dCtx.canvas.height);
+    redrawDrawings();
+    canvas.style.cursor = 'crosshair';
+  });
+
+  // Wheel: zoom (change visible candle count)
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const data = G.currentData;
+    if (!data) return;
+    const n = data.closes.length;
+    const si = G._scaleInfo;
+    const visibleNow = si ? (si.viewEnd - si.viewStart) : 120;
+    if (e.deltaY < 0) {
+      // Zoom in — fewer candles
+      const newVisible = Math.max(20, visibleNow - 15);
+      G.viewStart = Math.max(0, n - newVisible);
+    } else {
+      // Zoom out — more candles
+      const newVisible = Math.min(n, visibleNow + 15);
+      G.viewStart = Math.max(0, n - newVisible);
+    }
+    drawAll(); drawVolume();
+  }, { passive: false });
+
+  // Touch support for mobile
+  let touchStartX = null;
+  let touchViewStart = 0;
+  canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchViewStart = G.viewStart;
+  }, { passive: true });
+  canvas.addEventListener('touchmove', e => {
+    if (touchStartX === null) return;
+    const dx = touchStartX - e.touches[0].clientX;
+    const si = G._scaleInfo;
+    const step = si ? (si.cw + 1) : 10;
+    const shift = Math.round(dx / step);
+    const data = G.currentData;
+    if (!data) return;
+    G.viewStart = Math.max(0, Math.min(data.closes.length - 20, touchViewStart + shift));
+    drawAll(); drawVolume();
+  }, { passive: true });
+}
+
+function getCanvasPos(e) {
+  const rect = e.target.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+// Convert pixel X/Y on chart to {bar index, price}
+function pixelToPrice(x, y) {
+  const si = G._scaleInfo;
+  if (!si) return { bar: 0, price: 0 };
+  const { viewStart, cw, p, priceMin, priceRange, chartH } = si;
+  const bar = viewStart + Math.floor((x - p.l) / (cw + 1));
+  const price = priceMin + priceRange * (1 - (y - p.t) / chartH);
+  return { bar: Math.max(0, bar), price };
+}
+
+// Convert {bar, price} back to pixel X/Y
+function priceToPixel(bar, price) {
+  const si = G._scaleInfo;
+  if (!si) return { x: 0, y: 0 };
+  const { viewStart, cw, p, priceMin, priceRange, chartH } = si;
+  const x = p.l + (bar - viewStart) * (cw + 1) + cw / 2;
+  const y = p.t + chartH * (1 - (price - priceMin) / priceRange);
+  return { x, y };
+}
+
+function drawCrosshair(mx, my) {
+  const dCtx = G.dCtx;
+  const W = dCtx.canvas.width, H = dCtx.canvas.height;
+  const si = G._scaleInfo;
+  dCtx.clearRect(0, 0, W, H);
+  redrawDrawings();
+  if (!si) return;
+
+  const { p } = si;
+  // Only draw inside chart area
+  if (mx < p.l || mx > W - p.r || my < p.t || my > H - p.b) return;
+
+  dCtx.save();
+  dCtx.strokeStyle = 'rgba(140,160,180,0.35)';
+  dCtx.lineWidth = 1;
+  dCtx.setLineDash([3, 4]);
+  // Vertical line
+  dCtx.beginPath(); dCtx.moveTo(mx, p.t); dCtx.lineTo(mx, H - p.b); dCtx.stroke();
+  // Horizontal line
+  dCtx.beginPath(); dCtx.moveTo(p.l, my); dCtx.lineTo(W - p.r, my); dCtx.stroke();
+  dCtx.setLineDash([]);
+
+  // Price label on right axis
+  const pc = pixelToPrice(mx, my);
+  dCtx.fillStyle = 'rgba(0,229,176,0.85)';
+  const labelW = 62, labelH = 16;
+  dCtx.fillRect(W - p.r, my - labelH / 2, labelW, labelH);
+  dCtx.fillStyle = '#000';
+  dCtx.font = 'bold 10px monospace';
+  dCtx.textAlign = 'center';
+  dCtx.fillText(fp(pc.price), W - p.r + labelW / 2, my + 4);
+
+  // Date label on x axis
+  const data = G.currentData;
+  if (data && pc.bar >= 0 && pc.bar < data.timestamps.length) {
+    const ts = data.timestamps[pc.bar];
+    if (ts) {
+      const d = new Date(ts * 1000);
+      const label = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(2)}`;
+      dCtx.fillStyle = 'rgba(0,229,176,0.85)';
+      dCtx.fillRect(mx - 28, H - p.b, 56, 16);
+      dCtx.fillStyle = '#000';
+      dCtx.textAlign = 'center';
+      dCtx.fillText(label, mx, H - p.b + 11);
+    }
+  }
+  dCtx.restore();
+
+  showOHLCForX(mx);
+}
+
+function redrawDrawings() {
+  const dCtx = G.dCtx;
+  const si = G._scaleInfo;
+  if (!si) return;
+  const W = dCtx.canvas.width;
+
+  G.drawings.forEach(d => {
+    const p1 = priceToPixel(d.bar1, d.price1);
+    const p2 = priceToPixel(d.bar2, d.price2);
+    dCtx.strokeStyle = 'rgba(240,165,0,0.8)';
+    dCtx.lineWidth = 1.5;
+    dCtx.beginPath();
+    if (d.type === 'hline') {
+      dCtx.moveTo(0, p1.y); dCtx.lineTo(W, p1.y);
+    } else if (d.type === 'trend') {
+      dCtx.moveTo(p1.x, p1.y); dCtx.lineTo(p2.x, p2.y);
+    } else if (d.type === 'ray') {
+      // Extend ray to right edge of canvas
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      if (dx !== 0) {
+        const ext = (W - p1.x) / dx;
+        dCtx.moveTo(p1.x, p1.y);
+        dCtx.lineTo(p1.x + dx * ext, p1.y + dy * ext);
+      }
+    }
+    dCtx.stroke();
+  });
+}
+
+function clearDrawings() { G.drawings = []; G.dCtx.clearRect(0,0,G.dCtx.canvas.width,G.dCtx.canvas.height); }
+
+function showOHLCForX(x) {
+  const si = G._scaleInfo;
+  const data = G.currentData;
+  if (!si || !data) return;
+  const { viewStart, cw, p } = si;
+  const i = viewStart + Math.floor((x - p.l) / (cw + 1));
+  if (i < 0 || i >= data.closes.length) return;
+  document.getElementById('oi-o').textContent = fp(data.opens[i] || 0);
+  document.getElementById('oi-h').textContent = fp(data.highs[i] || 0);
+  document.getElementById('oi-l').textContent = fp(data.lows[i] || 0);
+  document.getElementById('oi-c').textContent = fp(data.closes[i] || 0);
+  document.getElementById('oi-v').textContent = fv(data.volumes[i] || 0);
+}
+
+// ── CAPITAL ───────────────────────────────────────────────────
+async function loadCapitalFromDB() {
+  try {
+    const rows = await sbGet('settings', '?id=eq.default');
+    if (rows && rows.length) {
+      CFG.capital = rows[0].capital || CFG.capital;
+      CFG.startCapital = rows[0].start_capital || CFG.startCapital;
+      CFG.riskPct = rows[0].risk_pct || CFG.riskPct;
+    }
+  } catch(e) { /* use local */ }
+}
+
+async function saveCapitalToDB() {
+  try {
+    await sbPatch('settings', 'default', { capital: CFG.capital, updated_at: new Date().toISOString() }, 'id');
+  } catch(e) { saveLocal(); }
+}
+
+function updateCapDisplay() {
+  const pnl = CFG.capital - CFG.startCapital;
+  const pnlPct = ((pnl / CFG.startCapital) * 100).toFixed(2);
+  document.getElementById('cap-val').textContent = '₹' + fn(CFG.capital.toFixed(0));
+  const el = document.getElementById('cap-pnl');
+  el.textContent = (pnl >= 0 ? '+' : '') + '₹' + fn(pnl.toFixed(0)) + ' (' + pnlPct + '%)';
+  el.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function resetCapital() {
+  document.getElementById('reset-cap-input').value = CFG.startCapital || 3000000;
+  showModal('reset-modal');
+}
+
+async function confirmResetCapital() {
+  const newCap = parseFloat(document.getElementById('reset-cap-input').value);
+  if (isNaN(newCap) || newCap < 10000) { toast('Enter valid capital'); return; }
+  CFG.capital = newCap;
+  CFG.startCapital = newCap;
+  await saveCapitalToDB();
+  updateCapDisplay();
+  closeModal('reset-modal');
+  toast('Capital reset to ₹' + fn(newCap.toFixed(0)));
+}
+
+// ── WATCHLIST ─────────────────────────────────────────────────
+let _watchlistCache = [];
+
+async function loadWatchlist() {
+  try {
+    const rows = await sbGet('watchlist', '?status=neq.dismissed&order=added_date.desc');
+    _watchlistCache = rows || [];
+  } catch(e) { _watchlistCache = LOCAL_DB['watchlist'] || []; }
+  renderWatchlist();
+}
+
+function renderWatchlist() {
+  const el = document.getElementById('watchlist-items');
+  let items = _watchlistCache;
+  if (G.wlFilter !== 'all') items = items.filter(w => w.status === G.wlFilter);
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No stocks yet.<br>Click 🔍 to scan.</div></div>';
+    return;
+  }
+  el.innerHTML = items.map(w => {
+    const pos = _positionsCache.find(p => p.symbol === w.symbol && p.status === 'open');
+    let pnlHtml = '';
+    if (pos) {
+      const lastClose = G.currentSymbol === w.symbol ? (G.currentData?.closes?.at(-1) || pos.entry_price) : pos.entry_price;
+      const pnl = (lastClose - pos.entry_price) * pos.quantity * (pos.direction === 'BUY' ? 1 : -1);
+      pnlHtml = `<span class="wl-pnl" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}</span>`;
+    }
+    return `<div class="wl-item" data-sym="${w.symbol}" onclick="loadStock('${w.symbol}')">
+      <div style="flex:1;min-width:0">
+        <div class="wl-sym">${w.symbol.replace('.NS','')}</div>
+        <div class="wl-name">${w.note || ''}</div>
+      </div>
+      <span class="status-badge s-${w.status}">${w.status.replace('_',' ')}</span>
+      ${pnlHtml}
+    </div>`;
+  }).join('');
+}
+
+function filterWL(f) {
+  G.wlFilter = f;
+  document.querySelectorAll('[id^="wlf-"]').forEach(b => b.style.background = '');
+  document.getElementById(`wlf-${f}`).style.background = 'var(--accent-dim)';
+  renderWatchlist();
+}
+
+async function addToWatchlist(symbol, note = '') {
+  const sym = symbol || G.currentSymbol;
+  if (!sym) { toast('No stock loaded'); return; }
+  const existing = _watchlistCache.find(w => w.symbol === sym);
+  if (existing) { toast(`${sym.replace('.NS','')} already in watchlist`); return; }
+  const name = G.currentMeta?.name || sym;
+  const row = { symbol: sym, status: 'watching', note: name, added_date: new Date().toISOString() };
+  try {
+    const res = await sbPost('watchlist', row);
+    _watchlistCache.unshift(res[0] || row);
+    renderWatchlist();
+    toast(`✅ Added ${sym.replace('.NS','')} to watchlist`);
+  } catch(e) { toast('Error adding to watchlist'); }
+}
+
+// ── POSITIONS ─────────────────────────────────────────────────
+let _positionsCache = [];
+
+async function loadPositions() {
+  try {
+    const rows = await sbGet('positions', '?status=eq.open&order=created_at.desc');
+    _positionsCache = rows || [];
+  } catch(e) { _positionsCache = (LOCAL_DB['positions'] || []).filter(p => p.status === 'open'); }
+  renderPositions();
+}
+
+async function loadActivePosition(symbol) {
+  const pos = _positionsCache.find(p => p.symbol === symbol && p.status === 'open');
+  G.openPosition = pos || null;
+  updateTradePanel();
+}
+
+function renderPositions() {
+  const el = document.getElementById('positions-list');
+  const open = _positionsCache.filter(p => p.status === 'open');
+  if (!open.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No open positions.</div></div>';
+    return;
+  }
+  el.innerHTML = open.map(pos => {
+    const lastClose = G.currentSymbol === pos.symbol ? (G.currentData?.closes?.at(-1) || pos.entry_price) : pos.entry_price;
+    const pnl = (lastClose - pos.entry_price) * pos.quantity * (pos.direction === 'BUY' ? 1 : -1);
+    const pnlPct = (pnl / pos.allocated_capital * 100).toFixed(1);
+    return `<div class="pos-item" onclick="loadStock('${pos.symbol}')">
+      <div class="pos-header">
+        <span class="pos-sym">${pos.symbol.replace('.NS','')}</span>
+        <span class="pos-pnl" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}</span>
+      </div>
+      <div class="pos-detail">
+        <span class="dir-pill ${pos.direction === 'BUY' ? 'd-buy' : 'd-sell'}">${pos.direction}</span>
+        Entry ₹${fp(pos.entry_price)} · SL ₹${fp(pos.trail_sl || pos.stop_loss)} · ${pos.quantity} qty
+        <span style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">(${pnl >= 0 ? '+' : ''}${pnlPct}%)</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateTradePanel() {
+  const hasPos = !!G.openPosition;
+  document.getElementById('pre-trade-panel').style.display = hasPos ? 'none' : 'block';
+  document.getElementById('in-trade-panel').style.display = hasPos ? 'block' : 'none';
+  document.getElementById('rp-mode-title').textContent = hasPos ? 'Manage Position' : 'Trade Setup';
+  document.getElementById('rp-stock-info').style.display = hasPos ? 'block' : 'none';
+  if (hasPos) {
+    const pos = G.openPosition;
+    const lastClose = G.currentData?.closes?.at(-1) || pos.entry_price;
+    const pnl = (lastClose - pos.entry_price) * pos.quantity * (pos.direction === 'BUY' ? 1 : -1);
+    document.getElementById('rp-pos-sym').textContent = pos.symbol.replace('.NS','');
+    document.getElementById('lp-entry').textContent = '₹' + fp(pos.entry_price);
+    document.getElementById('lp-curr').textContent = '₹' + fp(lastClose);
+    document.getElementById('lp-pnl').textContent = (pnl >= 0 ? '+' : '') + '₹' + fn(pnl.toFixed(0));
+    document.getElementById('lp-pnl').style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('lp-sl').textContent = '₹' + fp(pos.trail_sl || pos.stop_loss);
+    document.getElementById('lp-qty').textContent = pos.quantity;
+    document.getElementById('tp-trail').value = pos.trail_sl || pos.stop_loss;
+  }
+}
+
+// ── RISK CALC ─────────────────────────────────────────────────
+function calcRisk() {
+  const sl = parseFloat(document.getElementById('tp-sl').value);
+  if (!sl || !G.currentData) { document.getElementById('risk-calc').style.display = 'none'; return; }
+  const lastClose = G.currentData.closes.at(-1);
+  if (!lastClose) return;
+  const slDist = Math.abs(lastClose - sl);
+  const slPct = (slDist / lastClose * 100).toFixed(2);
+  const riskAmt = CFG.capital * (CFG.riskPct / 100);
+  const suggestedQty = Math.floor(riskAmt / slDist);
+  const qtyInput = parseInt(document.getElementById('tp-qty').value) || suggestedQty;
+  const actualQty = qtyInput || suggestedQty;
+  const allocAmt = actualQty * lastClose;
+  const allocPct = (allocAmt / CFG.capital * 100).toFixed(1);
+  document.getElementById('rc-entry').textContent = '₹' + fp(lastClose);
+  document.getElementById('rc-qty').textContent = suggestedQty + ' shares';
+  document.getElementById('rc-alloc').textContent = '₹' + fn(allocAmt.toFixed(0)) + ' (' + allocPct + '%)';
+  document.getElementById('rc-risk').textContent = '₹' + fn((slDist * actualQty).toFixed(0));
+  document.getElementById('rc-slpct').textContent = slPct + '%';
+  document.getElementById('risk-calc').style.display = 'block';
+}
+
+// ── TRADE ENTRY ───────────────────────────────────────────────
+async function enterTrade(direction) {
+  if (!G.currentSymbol || !G.currentData) { toast('Load a stock first'); return; }
+  const sl = parseFloat(document.getElementById('tp-sl').value);
+  if (!sl) { toast('Enter a Stop Loss price'); return; }
+  const lastClose = G.currentData.closes.at(-1);
+  const slDist = Math.abs(lastClose - sl);
+  if (slDist <= 0) { toast('SL must be different from entry price'); return; }
+  const riskAmt = CFG.capital * (CFG.riskPct / 100);
+  const suggestedQty = Math.floor(riskAmt / slDist);
+  const manualQty = parseInt(document.getElementById('tp-qty').value);
+  const qty = manualQty || suggestedQty;
+  if (qty <= 0) { toast('Invalid quantity'); return; }
+  const allocAmt = qty * lastClose;
+  const slPct = (slDist / lastClose * 100);
+  const allocPct = (allocAmt / CFG.capital * 100);
+
+  const pos = {
+    symbol: G.currentSymbol,
+    name: G.currentMeta?.name || G.currentSymbol,
+    direction,
+    entry_price: lastClose,
+    current_price: lastClose,
+    stop_loss: sl,
+    quantity: qty,
+    allocated_capital: allocAmt,
+    risk_amount: slDist * qty,
+    sl_pct: slPct,
+    entry_date: new Date().toISOString().slice(0,10),
+    status: 'open',
+    partial_exits: [],
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    const res = await sbPost('positions', pos);
+    const savedPos = res[0] || pos;
+    _positionsCache.push(savedPos);
+    G.openPosition = savedPos;
+    // Update watchlist status
+    const wlRow = _watchlistCache.find(w => w.symbol === G.currentSymbol);
+    if (wlRow) {
+      await sbPatch('watchlist', wlRow.id, { status: 'in_trade' });
+      wlRow.status = 'in_trade';
+    } else {
+      await addToWatchlist(G.currentSymbol, G.currentMeta?.name || '');
+      await sbPatch('watchlist', _watchlistCache[0]?.id, { status: 'in_trade' });
+    }
+    updateTradePanel();
+    renderWatchlist();
+    renderPositions();
+    drawAll();
+    toast(`✅ ${direction} ${qty} shares of ${G.currentSymbol.replace('.NS','')} @ ₹${fp(lastClose)}`);
+    await sendTelegramAlert(`📈 New ${direction} Trade\n${G.currentSymbol.replace('.NS','')} — ${G.currentMeta?.name || ''}\nEntry: ₹${fp(lastClose)} | SL: ₹${fp(sl)} | Qty: ${qty}\nRisk: ₹${fn((slDist*qty).toFixed(0))} | Alloc: ₹${fn(allocAmt.toFixed(0))}`);
+    showNotif('success', `Trade Entered`, `${direction} ${G.currentSymbol.replace('.NS','')} @ ₹${fp(lastClose)}`);
+  } catch(e) { toast('Error entering trade: ' + e.message); }
+}
+
+// ── EXIT TRADE ────────────────────────────────────────────────
+async function exitTrade() {
+  if (!G.openPosition) { toast('No open position for this stock'); return; }
+  const pos = G.openPosition;
+  const exitPrice = G.currentData?.closes?.at(-1) || pos.entry_price;
+  const pnl = (exitPrice - pos.entry_price) * pos.quantity * (pos.direction === 'BUY' ? 1 : -1);
+  const pnlPct = (pnl / pos.allocated_capital * 100);
+  const daysHeld = Math.ceil((new Date() - new Date(pos.entry_date)) / 86400000);
+  const result = pnl >= 0 ? 'WIN' : 'LOSS';
+
+  // Save completed trade
+  const trade = {
+    position_id: pos.id,
+    symbol: pos.symbol, name: pos.name,
+    direction: pos.direction,
+    entry_price: pos.entry_price, exit_price: exitPrice,
+    stop_loss: pos.stop_loss, quantity: pos.quantity,
+    pnl, pnl_pct: pnlPct, sl_pct: pos.sl_pct,
+    alloc_pct: (pos.allocated_capital / CFG.startCapital * 100),
+    days_held: daysHeld,
+    entry_date: pos.entry_date, exit_date: new Date().toISOString().slice(0,10),
+    result, note: document.getElementById('chart-note')?.value || '',
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await sbPost('trades', trade);
+    await sbPatch('positions', pos.id, { status: 'closed', current_price: exitPrice });
+    // Update capital
+    CFG.capital += pnl;
+    await saveCapitalToDB();
+    // Update watchlist
+    const wlRow = _watchlistCache.find(w => w.symbol === pos.symbol);
+    if (wlRow) { await sbPatch('watchlist', wlRow.id, { status: 'exited' }); wlRow.status = 'exited'; }
+    // Update caches
+    _positionsCache = _positionsCache.filter(p => p.id !== pos.id);
+    G.openPosition = null;
+    updateTradePanel();
+    updateCapDisplay();
+    renderPositions();
+    renderWatchlist();
+    drawAll();
+    updateStats();
+    const msg = `${result === 'WIN' ? '✅' : '❌'} Trade Exited\n${pos.symbol.replace('.NS','')}\nEntry: ₹${fp(pos.entry_price)} → Exit: ₹${fp(exitPrice)}\nP&L: ${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))} (${pnlPct.toFixed(1)}%)\nDays: ${daysHeld}`;
+    await sendTelegramAlert(msg);
+    showNotif(result === 'WIN' ? 'success' : 'error', `Trade ${result}`, `${pos.symbol.replace('.NS','')} ${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}`);
+    toast(`Trade closed: ${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}`);
+  } catch(e) { toast('Error exiting trade: ' + e.message); }
+}
+
+async function partialExit(pct) {
+  if (!G.openPosition) return;
+  const pos = G.openPosition;
+  const exitQty = Math.floor(pos.quantity * pct / 100);
+  if (exitQty <= 0) { toast('Too few shares for partial exit'); return; }
+  const exitPrice = G.currentData?.closes?.at(-1) || pos.entry_price;
+  const pnl = (exitPrice - pos.entry_price) * exitQty * (pos.direction === 'BUY' ? 1 : -1);
+  const newQty = pos.quantity - exitQty;
+  const exits = pos.partial_exits || [];
+  exits.push({ date: new Date().toISOString().slice(0,10), price: exitPrice, qty: exitQty, pnl });
+  try {
+    await sbPatch('positions', pos.id, { quantity: newQty, partial_exits: exits });
+    G.openPosition.quantity = newQty;
+    G.openPosition.partial_exits = exits;
+    CFG.capital += pnl;
+    await saveCapitalToDB();
+    updateCapDisplay();
+    updateTradePanel();
+    renderPositions();
+    toast(`Sold ${pct}% (${exitQty} shares) @ ₹${fp(exitPrice)} | P&L: ${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}`);
+  } catch(e) { toast('Partial exit error'); }
+}
+
+async function updateTrailSL() {
+  if (!G.openPosition) return;
+  const newSL = parseFloat(document.getElementById('tp-trail').value);
+  if (isNaN(newSL)) { toast('Enter valid SL'); return; }
+  const pos = G.openPosition;
+  if (pos.direction === 'BUY' && newSL >= (G.currentData?.closes?.at(-1) || pos.entry_price)) { toast('SL must be below current price for BUY'); return; }
+  if (pos.direction === 'SELL' && newSL <= (G.currentData?.closes?.at(-1) || pos.entry_price)) { toast('SL must be above current price for SHORT'); return; }
+  try {
+    await sbPatch('positions', pos.id, { trail_sl: newSL });
+    G.openPosition.trail_sl = newSL;
+    drawAll();
+    toast('Trail SL updated to ₹' + fp(newSL));
+  } catch(e) { toast('Error updating SL'); }
+}
+
+// ── SCANNER ───────────────────────────────────────────────────
+async function startScan() {
+  // Build filtered queue — deduplicate by symbol first
+  const dismissed = await getDismissedSymbols();
+  const seen = new Set();
+  let pool = NSE_STOCKS.filter(([sym, name, sector, mcap]) => {
+    if (seen.has(sym)) return false;
+    seen.add(sym);
+    if (dismissed.includes(sym)) return false;
+    // Seed mcap filter — live mcap verified during scan from Yahoo
+    if (CFG.capMin && mcap < CFG.capMin * 0.5) return false; // loose pre-filter only
+    if (CFG.sector !== 'all' && sector !== CFG.sector) return false;
+    return true;
+  });
+  // Fisher-Yates shuffle for true randomness
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  G.scanQueue = pool;
+  G.scanIndex = 0;
+  document.getElementById('scan-sub').textContent =
+    `${pool.length} stocks in queue · Market cap verified live · Randomly shuffled`;
+  document.getElementById('scan-overlay').classList.add('show');
+  await loadNextScanStock();
+}
+
+async function loadNextScanStock() {
+  // Skip past end
+  if (G.scanIndex >= G.scanQueue.length) {
+    document.getElementById('scan-status').textContent = '✅ Scan complete — all stocks reviewed.';
+    document.getElementById('scan-sub').textContent = 'No more stocks in queue.';
+    document.getElementById('scan-sym').textContent = '—';
+    document.getElementById('scan-name').textContent = 'All done for this session.';
+    return;
+  }
+  const [sym, name, sector] = G.scanQueue[G.scanIndex];
+  const pct = Math.round((G.scanIndex / G.scanQueue.length) * 100);
+  document.getElementById('scan-bar').style.width = pct + '%';
+  document.getElementById('scan-sym').textContent = sym.replace('.NS','');
+  document.getElementById('scan-name').textContent = name;
+  document.getElementById('scan-sector').textContent = sector;
+  document.getElementById('scan-price').textContent = '...';
+  document.getElementById('scan-mcap').textContent = '...';
+  document.getElementById('scan-52h').textContent = '...';
+  document.getElementById('scan-52l').textContent = '...';
+  document.getElementById('scan-chg').textContent = '...';
+  document.getElementById('scan-status').textContent =
+    `${G.scanIndex + 1} / ${G.scanQueue.length} · Remaining: ${G.scanQueue.length - G.scanIndex - 1}`;
+
+  // Fetch live quote
+  try {
+    const json = await fetchQuote(sym);
+    const q = json?.quoteResponse?.result?.[0];
+    G.scanCurrentMeta = q;
+    if (q) {
+      const mcapCr = (q.marketCap || 0) / 1e7; // convert to Crore
+      // Apply LIVE market cap filter
+      if (CFG.capMin && mcapCr < CFG.capMin) {
+        // Auto-skip stocks below cap filter — no need to show to user
+        G.scanIndex++;
+        await loadNextScanStock();
+        return;
+      }
+      if (CFG.capMax && mcapCr > CFG.capMax) {
+        G.scanIndex++;
+        await loadNextScanStock();
+        return;
+      }
+      document.getElementById('scan-price').textContent = '₹' + fp(q.regularMarketPrice || 0);
+      document.getElementById('scan-mcap').textContent = formatMcap(q.marketCap || 0);
+      document.getElementById('scan-52h').textContent = '₹' + fp(q.fiftyTwoWeekHigh || 0);
+      document.getElementById('scan-52l').textContent = '₹' + fp(q.fiftyTwoWeekLow || 0);
+      const chg = q.regularMarketChangePercent || 0;
+      document.getElementById('scan-chg').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+      document.getElementById('scan-chg').style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+      // Update status with live cap
+      document.getElementById('scan-status').textContent =
+        `${G.scanIndex + 1} / ${G.scanQueue.length} · MCap: ${formatMcap(q.marketCap)} · ${G.scanQueue.length - G.scanIndex - 1} remaining`;
+    } else {
+      // Yahoo returned no data — skip silently
+      G.scanIndex++;
+      await loadNextScanStock();
+    }
+  } catch(e) {
+    document.getElementById('scan-price').textContent = 'N/A';
+    document.getElementById('scan-mcap').textContent = 'N/A';
+  }
+}
+
+function scanSkip() {
+  G.scanIndex++;
+  loadNextScanStock();
+}
+
+async function scanAddToWatchlist() {
+  const [sym, name] = G.scanQueue[G.scanIndex];
+  await addToWatchlist(sym, name);
+  G.scanIndex++;
+  await loadNextScanStock();
+}
+
+async function scanDismiss() {
+  const [sym, name] = G.scanQueue[G.scanIndex];
+  await dismissSymbol(sym, name);
+  G.scanIndex++;
+  await loadNextScanStock();
+}
+
+function closeScan() {
+  document.getElementById('scan-overlay').classList.remove('show');
+  // Load first watchlist stock if none loaded
+  if (!G.currentSymbol && _watchlistCache.length > 0) {
+    loadStock(_watchlistCache[0].symbol);
+  }
+}
+
+function skipToNext() {
+  if (!_watchlistCache.length) { toast('No stocks in watchlist'); return; }
+  const watching = _watchlistCache.filter(w => w.status === 'watching' || w.status === 'in_trade');
+  if (!watching.length) { toast('No more stocks'); return; }
+  const current = watching.findIndex(w => w.symbol === G.currentSymbol);
+  const next = watching[(current + 1) % watching.length];
+  if (next) loadStock(next.symbol);
+}
+
+// ── DISMISS ───────────────────────────────────────────────────
+async function getDismissedSymbols() {
+  try {
+    const rows = await sbGet('dismissed', '?select=symbol');
+    return (rows || []).map(r => r.symbol);
+  } catch(e) { return (LOCAL_DB['dismissed'] || []).map(r => r.symbol); }
+}
+
+async function dismissStock() {
+  if (!G.currentSymbol) return;
+  await dismissSymbol(G.currentSymbol, G.currentMeta?.name || G.currentSymbol);
+  // Remove from watchlist
+  const wlRow = _watchlistCache.find(w => w.symbol === G.currentSymbol);
+  if (wlRow) {
+    await sbDelete('watchlist', wlRow.id);
+    _watchlistCache = _watchlistCache.filter(w => w.symbol !== G.currentSymbol);
+    renderWatchlist();
+  }
+  toast('🚫 Dismissed ' + G.currentSymbol.replace('.NS',''));
+  skipToNext();
+}
+
+async function dismissSymbol(sym, name) {
+  try {
+    await sbPost('dismissed', { symbol: sym, name, dismissed_at: new Date().toISOString() });
+  } catch(e) { localPost('dismissed', { symbol: sym, name }); }
+}
+
+async function renderDismissed() {
+  const el = document.getElementById('dismissed-list');
+  try {
+    const rows = await sbGet('dismissed', '?order=dismissed_at.desc');
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🚫</div><div class="empty-text">No dismissed stocks.</div></div>';
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span style="font-family:var(--font);font-weight:700">${r.symbol.replace('.NS','')}</span>
+        <span style="color:var(--text2);font-size:11px;flex:1">${r.name || ''}</span>
+        <span style="font-size:10px;color:var(--text3)">${r.dismissed_at?.slice(0,10) || ''}</span>
+        <button class="btn btn-xs btn-secondary" onclick="undismiss('${r.id}','${r.symbol}')">↺ Restore</button>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Error loading dismissed list</div>'; }
+}
+
+async function undismiss(id, sym) {
+  await sbDelete('dismissed', id);
+  toast('Restored ' + sym.replace('.NS',''));
+  renderDismissed();
+}
+
+// ── ALERTS ────────────────────────────────────────────────────
+async function setAlert() {
+  if (!G.currentSymbol) { toast('Load a stock first'); return; }
+  const cond = document.getElementById('alert-cond').value;
+  const price = parseFloat(document.getElementById('alert-price').value);
+  if (!price) { toast('Enter alert price'); return; }
+  const alert = {
+    symbol: G.currentSymbol,
+    name: G.currentMeta?.name || G.currentSymbol,
+    condition: cond, target_price: price,
+    triggered: false, notify_telegram: true, notify_inapp: true,
+    created_at: new Date().toISOString(),
+  };
+  try {
+    await sbPost('alerts', alert);
+    toast(`🔔 Alert set: ${G.currentSymbol.replace('.NS','')} ${cond} ₹${fp(price)}`);
+  } catch(e) { toast('Error setting alert'); }
+}
+
+async function checkAlerts() {
+  try {
+    const alerts = await sbGet('alerts', '?triggered=eq.false');
+    if (!alerts || !alerts.length) return;
+    for (const a of alerts) {
+      try {
+        const json = await fetchQuote(a.symbol);
+        const q = json?.quoteResponse?.result?.[0];
+        if (!q) continue;
+        const price = q.regularMarketPrice || 0;
+        const triggered = (a.condition === 'above' && price >= a.target_price) ||
+                          (a.condition === 'below' && price <= a.target_price);
+        if (triggered) {
+          await sbPatch('alerts', a.id, { triggered: true, triggered_at: new Date().toISOString(), triggered_price: price });
+          showNotif('alert', `🔔 Alert Triggered!`, `${a.symbol.replace('.NS','')} is ${a.condition} ₹${fp(a.target_price)} (now ₹${fp(price)})`);
+          await sendTelegramAlert(`🔔 Price Alert!\n${a.symbol.replace('.NS','')} — ${a.name}\nCondition: ${a.condition} ₹${fp(a.target_price)}\nCurrent: ₹${fp(price)}`);
+        }
+      } catch(e) { /* skip individual alert errors */ }
+    }
+  } catch(e) { /* alerts check failed */ }
+}
+
+async function renderAlerts() {
+  const el = document.getElementById('alerts-list');
+  try {
+    const rows = await sbGet('alerts', '?order=created_at.desc');
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No alerts set yet.</div></div>';
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div class="alert-item ${r.triggered ? 'triggered' : ''}">
+        <span style="font-family:var(--font);font-weight:700">${r.symbol.replace('.NS','')}</span>
+        <span style="flex:1;font-size:11px;color:var(--text2)">${r.condition} ₹${fp(r.target_price)}</span>
+        ${r.triggered ? `<span style="color:var(--green);font-size:10px">✅ Triggered @ ₹${fp(r.triggered_price)}</span>` :
+          `<span style="color:var(--blue);font-size:10px">Active</span>`}
+        <button class="btn btn-xs btn-danger" onclick="deleteAlert('${r.id}')">✕</button>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Error loading alerts</div>'; }
+}
+
+async function deleteAlert(id) {
+  await sbDelete('alerts', id);
+  renderAlerts();
+}
+
+// ── JOURNAL ───────────────────────────────────────────────────
+async function renderJournal() {
+  try {
+    const trades = await sbGet('trades', '?order=created_at.desc');
+    const all = trades || [];
+    // Stats
+    const closed = all.filter(t => t.result !== 'SKIP');
+    const wins = closed.filter(t => t.result === 'WIN');
+    const losses = closed.filter(t => t.result === 'LOSS');
+    const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+    const wr = closed.length ? (wins.length / closed.length * 100).toFixed(0) : 0;
+    const avgPnl = closed.length ? (totalPnl / closed.length).toFixed(0) : 0;
+    const avgDays = closed.length ? (closed.reduce((s,t) => s + (t.days_held||0), 0) / closed.length).toFixed(1) : 0;
+    const openPos = _positionsCache.filter(p => p.status === 'open').length;
+    document.getElementById('j-stats').innerHTML = `
+      <div class="js"><div class="js-l">Trades</div><div class="js-v">${closed.length}</div></div>
+      <div class="js"><div class="js-l">Win %</div><div class="js-v" style="color:${parseInt(wr)>=50?'var(--green)':'var(--red)'}">${wr}%</div></div>
+      <div class="js"><div class="js-l">Wins</div><div class="js-v" style="color:var(--green)">${wins.length}</div></div>
+      <div class="js"><div class="js-l">Losses</div><div class="js-v" style="color:var(--red)">${losses.length}</div></div>
+      <div class="js"><div class="js-l">Total P&L</div><div class="js-v" style="color:${totalPnl>=0?'var(--green)':'var(--red)'}">${totalPnl>=0?'+':''}₹${fn(totalPnl.toFixed(0))}</div></div>
+      <div class="js"><div class="js-l">Avg P&L</div><div class="js-v">${parseFloat(avgPnl)>=0?'+':''}₹${fn(avgPnl)}</div></div>
+      <div class="js"><div class="js-l">Open Pos</div><div class="js-v" style="color:var(--blue)">${openPos}</div></div>`;
+
+    // Table
+    let filtered = all;
+    if (G.jFilter === 'WIN') filtered = all.filter(t => t.result === 'WIN');
+    else if (G.jFilter === 'LOSS') filtered = all.filter(t => t.result === 'LOSS');
+    else if (G.jFilter === 'open') {
+      const openTrades = _positionsCache.filter(p => p.status === 'open').map((p, i) => ({
+        ...p, result: 'OPEN', pnl: 0, pnl_pct: 0, days_held: Math.ceil((new Date() - new Date(p.entry_date)) / 86400000)
+      }));
+      filtered = openTrades;
+    }
+    document.getElementById('j-tbody').innerHTML = filtered.map((t, i) => {
+      const pnlColor = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+      const res = t.result || 'OPEN';
+      return `<tr>
+        <td>${i+1}</td>
+        <td style="font-family:var(--font);font-weight:700">${(t.symbol||'').replace('.NS','')}</td>
+        <td><span class="pill ${t.direction==='BUY'?'p-buy':'p-sell-p'}">${t.direction||'—'}</span></td>
+        <td>₹${fp(t.entry_price||0)}</td>
+        <td>${t.exit_price ? '₹'+fp(t.exit_price) : '—'}</td>
+        <td>₹${fp(t.stop_loss||0)}</td>
+        <td>${t.quantity||'—'}</td>
+        <td style="color:${pnlColor}">${t.pnl>=0?'+':''}₹${fn((t.pnl||0).toFixed(0))}</td>
+        <td style="color:${pnlColor}">${(t.pnl_pct||0).toFixed(1)}%</td>
+        <td>${t.days_held||0}d</td>
+        <td style="color:var(--text2)">${t.entry_date||'—'}</td>
+        <td><span class="pill ${res==='WIN'?'p-win':res==='LOSS'?'p-loss':res==='OPEN'?'p-open':'p-skip'}">${res}</span></td>
+        <td style="color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis">${t.note||''}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { document.getElementById('j-tbody').innerHTML = '<tr><td colspan="13" style="color:var(--text3);text-align:center">Error loading journal</td></tr>'; }
+}
+
+function filterTrades(f) {
+  G.jFilter = f;
+  document.querySelectorAll('[id^="jf-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById(`jf-${f}`)?.classList.add('active');
+  renderJournal();
+}
+
+async function exportCSV() {
+  try {
+    const trades = await sbGet('trades', '?order=created_at.desc');
+    if (!trades || !trades.length) { toast('No trades to export'); return; }
+    const h = ['#','Symbol','Name','Direction','Entry','Exit','SL','Qty','PnL_INR','PnL_Pct','SL_Pct','Days','Entry_Date','Exit_Date','Result','Notes'];
+    const rows = trades.map((t, i) => [i+1, t.symbol?.replace('.NS',''), `"${t.name||''}"`, t.direction, t.entry_price, t.exit_price||'', t.stop_loss, t.quantity, t.pnl?.toFixed(0), t.pnl_pct?.toFixed(2), t.sl_pct?.toFixed(2), t.days_held, t.entry_date, t.exit_date||'', t.result, `"${(t.note||'').replace(/"/g,"'")}"`].join(','));
+    const csv = [h.join(','), ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'NSE_Journal_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    toast('Exported!');
+  } catch(e) { toast('Export error'); }
+}
+
+// ── STATS UPDATE ──────────────────────────────────────────────
+async function updateStats() {
+  try {
+    const trades = await sbGet('trades', '?order=created_at.desc');
+    const closed = (trades || []).filter(t => t.result !== 'SKIP');
+    const wins = closed.filter(t => t.result === 'WIN');
+    const losses = closed.filter(t => t.result === 'LOSS');
+    const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+    const wr = closed.length ? (wins.length / closed.length * 100).toFixed(0) : 0;
+    const avgDays = closed.length ? (closed.reduce((s,t) => s + (t.days_held||0), 0) / closed.length).toFixed(1) : 0;
+    const avgR = closed.length ? (totalPnl / closed.length / (CFG.capital * CFG.riskPct / 100)).toFixed(2) : 0;
+    const best = closed.length ? Math.max(...closed.map(t => t.pnl||0)) : 0;
+    document.getElementById('st-trades').textContent = closed.length;
+    document.getElementById('st-wr').textContent = wr + '%';
+    document.getElementById('st-wr').style.color = parseInt(wr) >= 50 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('st-wins').textContent = wins.length;
+    document.getElementById('st-losses').textContent = losses.length;
+    document.getElementById('st-pnl').textContent = (totalPnl >= 0 ? '+' : '') + '₹' + fn(totalPnl.toFixed(0));
+    document.getElementById('st-pnl').style.color = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('st-avgr').textContent = avgR + 'R';
+    document.getElementById('st-avgdays').textContent = avgDays + 'd';
+    document.getElementById('st-best').textContent = '+₹' + fn(best.toFixed(0));
+  } catch(e) { /* skip */ }
+}
+
+// ── NOTES ─────────────────────────────────────────────────────
+async function saveNote() {
+  const note = document.getElementById('chart-note').value;
+  if (!note || !G.currentSymbol) return;
+  const wlRow = _watchlistCache.find(w => w.symbol === G.currentSymbol);
+  if (wlRow) {
+    await sbPatch('watchlist', wlRow.id, { note });
+    wlRow.note = note;
+    renderWatchlist();
+    toast('Note saved');
+  }
+}
+
+// ── TELEGRAM ALERTS ───────────────────────────────────────────
+async function sendTelegramAlert(msg) {
+  const chatId = CFG.telegramChatId;
+  // Use the same bot token approach as your NMS project
+  const token = localStorage.getItem('nse_tg_token');
+  if (!chatId || !token) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) { /* non-critical */ }
+}
+
+// ── IN-APP NOTIFICATIONS ─────────────────────────────────────
+function showNotif(type, title, body) {
+  const panel = document.getElementById('notif-panel');
+  const el = document.createElement('div');
+  el.className = `notif n-${type}`;
+  const icons = { success: '✅', alert: '🔔', error: '❌', info: 'ℹ' };
+  el.innerHTML = `<span class="notif-icon">${icons[type] || 'ℹ'}</span>
+    <div class="notif-text"><div class="notif-title">${title}</div><div class="notif-body">${body}</div></div>
+    <button class="notif-close" onclick="this.parentElement.remove()">✕</button>`;
+  panel.appendChild(el);
+  setTimeout(() => el.remove(), 6000);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function showLoading(show, text = 'Loading...', sub = '') {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('show', show);
+  if (text) document.getElementById('load-text').textContent = text;
+  if (sub !== undefined) document.getElementById('load-sub').textContent = sub;
+}
+
+function showModal(id) { document.getElementById(id)?.classList.add('show'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('nse_theme', isLight ? 'light' : 'dark');
+  if (G.mCtx) { drawAll(); drawVolume(); }
+}
+
+function fn(n) { return parseFloat(n).toLocaleString('en-IN'); }
+function fp(p) { if (!p && p !== 0) return '—'; return p >= 10000 ? p.toFixed(0) : p >= 100 ? p.toFixed(1) : p.toFixed(2); }
+function fv(v) { if (v >= 10000000) return (v/10000000).toFixed(1)+'Cr'; if (v >= 100000) return (v/100000).toFixed(1)+'L'; if (v >= 1000) return (v/1000).toFixed(0)+'K'; return v; }
+function formatMcap(v) { if (!v) return '—'; if (v >= 1e11) return '₹'+(v/1e7).toFixed(0)+'Cr'; if (v >= 1e9) return '₹'+(v/1e7).toFixed(0)+'Cr'; return '₹'+fn((v/1e7).toFixed(0))+'Cr'; }
+function getWeek(d) { const onejan = new Date(d.getFullYear(), 0, 1); return Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7); }
+
+function switchSbTab(tab) {
+  document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sb-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+  document.getElementById(`pane-${tab}`)?.classList.add('active');
+  if (tab === 'stats') updateStats();
+}
+
+// ── SEARCH ────────────────────────────────────────────────────
+let _searchIdx = -1;
+let _searchResults = [];
+
+function onSearchInput(val) {
+  val = val.trim().toUpperCase();
+  const drop = document.getElementById('search-dropdown');
+  if (!val || val.length < 1) { drop.style.display = 'none'; _searchResults = []; return; }
+
+  // Deduplicate NSE_STOCKS by symbol first
+  const seen = new Set();
+  const uniq = NSE_STOCKS.filter(([sym]) => {
+    if (seen.has(sym)) return false;
+    seen.add(sym); return true;
+  });
+
+  // Match by symbol prefix first, then name contains
+  const symMatches = uniq.filter(([sym]) => sym.replace('.NS','').startsWith(val));
+  const nameMatches = uniq.filter(([sym, name]) =>
+    !sym.replace('.NS','').startsWith(val) && name.toUpperCase().includes(val)
+  );
+  _searchResults = [...symMatches, ...nameMatches].slice(0, 15);
+  _searchIdx = -1;
+
+  if (!_searchResults.length) {
+    // Allow manual symbol entry — show "Load custom symbol" option
+    drop.innerHTML = `<div class="s-drop-item" onmousedown="loadCustomSymbol('${val}')">
+      <span class="s-sym">${val}</span>
+      <span class="s-name">Custom symbol — load from Yahoo Finance</span>
+    </div>`;
+    drop.style.display = 'block'; return;
+  }
+
+  drop.innerHTML = _searchResults.map(([sym, name, sector], i) =>
+    `<div class="s-drop-item" id="sdrop-${i}" onmousedown="selectSearchResult(${i})">
+      <span class="s-sym">${sym.replace('.NS','')}</span>
+      <span class="s-name">${name}</span>
+      <span class="s-sector">${sector}</span>
+    </div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function onSearchKey(e) {
+  const drop = document.getElementById('search-dropdown');
+  if (!_searchResults.length) {
+    if (e.key === 'Enter') loadSearched();
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _searchIdx = Math.min(_searchIdx + 1, _searchResults.length - 1);
+    highlightSearchItem();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _searchIdx = Math.max(_searchIdx - 1, -1);
+    highlightSearchItem();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (_searchIdx >= 0) selectSearchResult(_searchIdx);
+    else loadSearched();
+  } else if (e.key === 'Escape') {
+    drop.style.display = 'none';
+  }
+}
+
+function highlightSearchItem() {
+  document.querySelectorAll('.s-drop-item').forEach((el, i) =>
+    el.classList.toggle('s-active', i === _searchIdx)
+  );
+}
+
+function selectSearchResult(i) {
+  const [sym, name] = _searchResults[i];
+  document.getElementById('stock-search').value = sym.replace('.NS','');
+  document.getElementById('search-dropdown').style.display = 'none';
+  _searchResults = [];
+  loadStock(sym);
+}
+
+function showSearchDrop() {
+  const val = document.getElementById('stock-search').value.trim();
+  if (val && _searchResults.length) document.getElementById('search-dropdown').style.display = 'block';
+}
+
+function hideSearchDrop() {
+  // Delay so mousedown fires first
+  setTimeout(() => { document.getElementById('search-dropdown').style.display = 'none'; }, 180);
+}
+
+function loadSearched() {
+  const val = document.getElementById('stock-search').value.trim().toUpperCase();
+  if (!val) return;
+  document.getElementById('search-dropdown').style.display = 'none';
+  // Check if it's already a .NS symbol
+  const sym = val.endsWith('.NS') ? val : val + '.NS';
+  loadStock(sym);
+  document.getElementById('stock-search').value = '';
+}
+
+function loadCustomSymbol(val) {
+  document.getElementById('search-dropdown').style.display = 'none';
+  const sym = val.endsWith('.NS') ? val : val + '.NS';
+  loadStock(sym);
+  document.getElementById('stock-search').value = '';
+}
+
+// ── TELEGRAM TOKEN SETUP (extra setting) ─────────────────────
+// Run this in browser console to set your bot token:
+// localStorage.setItem('nse_tg_token', 'YOUR_BOT_TOKEN_HERE')
+</script>
+
+</body>
+</html>
