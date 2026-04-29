@@ -2837,14 +2837,15 @@ function loadCustomSymbol(val) {
 
 // ── AUTH (Supabase) ──────────────────────────────────────────
 function initAuth() {
-  // Must init Supabase first — needs CFG loaded
+  // Always show auth screen first
+  document.getElementById('auth-screen').classList.remove('hidden');
+
   if (!CFG.sbUrl || !CFG.sbKey) {
-    // Show auth screen with config warning
-    document.getElementById('auth-sub').textContent = 'Configure Supabase URL & Key first ↓';
-    // Show config inputs inside auth screen
+    document.getElementById('auth-sub').textContent = 'Enter your Supabase config to continue';
     showAuthConfigPrompt();
     return;
   }
+
   if (!initSupabase()) return;
 
   // Listen for auth state changes
@@ -2856,15 +2857,17 @@ function initAuth() {
     } else if (event === 'SIGNED_OUT') {
       _currentUser = null;
       _currentProfile = null;
-      document.getElementById('auth-screen').classList.remove('hidden');
-      // Reset app state
       _watchlistCache = [];
       _positionsCache = [];
       G.currentSymbol = null;
       G.currentData = null;
       G.openPosition = null;
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-pass').value = '';
+      document.getElementById('auth-error').textContent = '';
+      showSignInForm();
     } else if (event === 'PASSWORD_RECOVERY') {
-      // User clicked reset link — show password update UI
       showPasswordUpdatePrompt();
     }
   });
@@ -2875,38 +2878,60 @@ function initAuth() {
       _currentUser = session.user;
       document.getElementById('auth-screen').classList.add('hidden');
       startApp();
-    } else {
-      document.getElementById('auth-screen').classList.remove('hidden');
     }
+    // else: auth screen already visible, user signs in manually
   });
 }
 
 function showAuthConfigPrompt() {
-  // If Supabase not configured, show inline config in auth card
-  const card = document.querySelector('.auth-card');
-  if (!card) return;
+  // Hide signin form, show config form instead
+  document.getElementById('signin-form').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'none';
   const existing = document.getElementById('auth-config-inline');
-  if (existing) return;
+  if (existing) { existing.style.display = 'block'; return; }
   const div = document.createElement('div');
   div.id = 'auth-config-inline';
-  div.style.cssText = 'margin-top:16px;padding-top:14px;border-top:1px solid var(--border)';
   div.innerHTML = `
-    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Enter your Supabase config to continue:</div>
-    <div class="auth-field"><input type="text" id="inline-sb-url" placeholder="Supabase URL" style="font-size:12px" value="${CFG.sbUrl||''}"></div>
-    <div class="auth-field"><input type="password" id="inline-sb-key" placeholder="Anon Key" style="font-size:12px" value="${CFG.sbKey||''}"></div>
-    <button class="btn-auth" onclick="applyInlineConfig()" style="font-size:13px">Connect →</button>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">First time setup — enter your Supabase credentials:</div>
+    <div class="auth-field">
+      <input type="text" id="inline-sb-url" placeholder="Supabase Project URL" style="font-size:13px"
+        value="${CFG.sbUrl||''}" onkeydown="if(event.key==='Enter')document.getElementById('inline-sb-key').focus()">
+    </div>
+    <div class="auth-field">
+      <input type="password" id="inline-sb-key" placeholder="Supabase Anon Key"  style="font-size:13px"
+        value="${CFG.sbKey||''}" onkeydown="if(event.key==='Enter')applyInlineConfig()">
+    </div>
+    <div class="auth-error" id="inline-error"></div>
+    <button class="btn-auth" onclick="applyInlineConfig()">Connect & Continue →</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">
+      Find these in Supabase → Settings → API
+    </div>
   `;
-  card.appendChild(div);
+  // Insert before auth-footer
+  const footer = document.querySelector('.auth-footer');
+  footer ? footer.before(div) : document.querySelector('.auth-card').appendChild(div);
+  document.getElementById('inline-sb-url').focus();
 }
 
 function applyInlineConfig() {
   const url = document.getElementById('inline-sb-url')?.value.trim();
   const key = document.getElementById('inline-sb-key')?.value.trim();
-  if (!url || !key) { showNotif('error', 'Missing', 'Enter both URL and key'); return; }
+  const errEl = document.getElementById('inline-error');
+  if (!url || !key) {
+    if (errEl) errEl.textContent = 'Both fields required';
+    return;
+  }
+  if (!url.includes('supabase.co')) {
+    if (errEl) errEl.textContent = 'URL should be https://xxxx.supabase.co';
+    return;
+  }
   CFG.sbUrl = url; CFG.sbKey = key;
   localStorage.setItem('nse_live_cfg', JSON.stringify(CFG));
-  document.getElementById('auth-config-inline')?.remove();
+  // Hide config form, show signin form
+  document.getElementById('auth-config-inline').style.display = 'none';
+  document.getElementById('signin-form').style.display = 'block';
   document.getElementById('auth-sub').textContent = 'Sign in to your account';
+  // Re-init with new config
   initAuth();
 }
 
@@ -3052,11 +3077,16 @@ async function loadAdminData() {
   showLoading(false);
 }
 
-// Override showScreen to load admin data when navigating to admin panel
-const _origShowScreen = showScreen;
+// ── SCREEN NAVIGATION ────────────────────────────────────────
 function showScreen(id) {
-  _origShowScreen(id);
-  if (id === 'admin-screen') loadAdminData();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  // Side effects
+  if (id === 'journal-screen') renderJournal();
+  if (id === 'alerts-screen')  renderAlerts();
+  if (id === 'dismissed-screen') renderDismissed();
+  if (id === 'admin-screen')   loadAdminData();
 }
 
 // ── TELEGRAM TOKEN SETUP (extra setting) ─────────────────────
