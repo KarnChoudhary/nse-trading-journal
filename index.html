@@ -497,6 +497,24 @@ body {
     <div class="auth-title">Trading Journal</div>
     <div class="auth-sub" id="auth-sub">Sign in to your account</div>
 
+    <!-- Supabase config — shown only on first visit (no saved config) -->
+    <div id="auth-config-section" style="display:none">
+      <div style="background:rgba(61,158,255,.08);border:1px solid rgba(61,158,255,.25);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--blue);margin-bottom:14px">
+        🔧 First time setup — enter your Supabase credentials
+      </div>
+      <div class="auth-field">
+        <input type="text" id="inline-sb-url" placeholder="Supabase Project URL  (https://xxxx.supabase.co)"
+          style="font-size:12px" onkeydown="if(event.key==='Enter')document.getElementById('inline-sb-key').focus()">
+      </div>
+      <div class="auth-field">
+        <input type="password" id="inline-sb-key" placeholder="Supabase Anon Key  (eyJhbGci...)"
+          style="font-size:12px" onkeydown="if(event.key==='Enter')applyInlineConfig()">
+      </div>
+      <div class="auth-error" id="inline-error"></div>
+      <button class="btn-auth" onclick="applyInlineConfig()" style="margin-bottom:14px">Save & Continue →</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px">
+    </div>
+
     <!-- Sign In Form -->
     <div id="signin-form">
       <div class="auth-field">
@@ -506,12 +524,14 @@ body {
       <div class="auth-field">
         <input type="password" id="auth-pass" placeholder="Password" autocomplete="current-password"
           onkeydown="if(event.key==='Enter')doSignIn()">
-        <button class="auth-eye" onclick="toggleAuthEye()">👁</button>
+        <button class="auth-eye" onclick="toggleAuthEye()" id="auth-eye-btn">👁</button>
       </div>
       <div class="auth-error" id="auth-error"></div>
       <button class="btn-auth" id="auth-btn" onclick="doSignIn()">Sign In →</button>
       <div style="text-align:center;margin-top:10px">
         <button class="auth-link" onclick="showForgotForm()">Forgot password?</button>
+        &nbsp;·&nbsp;
+        <button class="auth-link" onclick="showConfigSection()">Change config</button>
       </div>
     </div>
 
@@ -523,7 +543,7 @@ body {
       </div>
       <div class="auth-error" id="reset-error"></div>
       <button class="btn-auth" onclick="doResetPassword()" style="margin-bottom:8px">Send Reset Link</button>
-      <button class="btn-auth" onclick="showSignInForm()" style="background:var(--panel);color:var(--text);border:1px solid var(--border2)">← Back</button>
+      <button class="btn-auth" onclick="showSignInForm()" style="background:var(--panel);color:var(--text);border:1px solid var(--border2)">← Back to Sign In</button>
     </div>
 
     <div class="auth-footer">Access is invite-only · Contact admin for an account</div>
@@ -2837,31 +2857,30 @@ function loadCustomSymbol(val) {
 
 // ── AUTH (Supabase) ──────────────────────────────────────────
 function initAuth() {
-  // Always show auth screen first
   document.getElementById('auth-screen').classList.remove('hidden');
 
   if (!CFG.sbUrl || !CFG.sbKey) {
-    document.getElementById('auth-sub').textContent = 'Enter your Supabase config to continue';
-    showAuthConfigPrompt();
+    showConfigSection();
     return;
   }
-
+  document.getElementById('inline-sb-url').value = CFG.sbUrl;
+  document.getElementById('inline-sb-key').value = CFG.sbKey;
+  document.getElementById('auth-config-section').style.display = 'none';
+  document.getElementById('signin-form').style.display = 'block';
   if (!initSupabase()) return;
+  _setupAuthListener();
+}
 
-  // Listen for auth state changes
+function _setupAuthListener() {
   _sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
       _currentUser = session.user;
       document.getElementById('auth-screen').classList.add('hidden');
       await startApp();
     } else if (event === 'SIGNED_OUT') {
-      _currentUser = null;
-      _currentProfile = null;
-      _watchlistCache = [];
-      _positionsCache = [];
-      G.currentSymbol = null;
-      G.currentData = null;
-      G.openPosition = null;
+      _currentUser = null; _currentProfile = null;
+      _watchlistCache = []; _positionsCache = [];
+      G.currentSymbol = null; G.currentData = null; G.openPosition = null;
       document.getElementById('auth-screen').classList.remove('hidden');
       document.getElementById('auth-email').value = '';
       document.getElementById('auth-pass').value = '';
@@ -2871,136 +2890,111 @@ function initAuth() {
       showPasswordUpdatePrompt();
     }
   });
-
-  // Check existing session
   _sb.auth.getSession().then(({ data: { session } }) => {
     if (session) {
       _currentUser = session.user;
       document.getElementById('auth-screen').classList.add('hidden');
       startApp();
     }
-    // else: auth screen already visible, user signs in manually
   });
 }
 
-function showAuthConfigPrompt() {
-  // Hide signin form, show config form instead
+function showConfigSection() {
+  document.getElementById('auth-config-section').style.display = 'block';
   document.getElementById('signin-form').style.display = 'none';
   document.getElementById('forgot-form').style.display = 'none';
-  const existing = document.getElementById('auth-config-inline');
-  if (existing) { existing.style.display = 'block'; return; }
-  const div = document.createElement('div');
-  div.id = 'auth-config-inline';
-  div.innerHTML = `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">First time setup — enter your Supabase credentials:</div>
-    <div class="auth-field">
-      <input type="text" id="inline-sb-url" placeholder="Supabase Project URL" style="font-size:13px"
-        value="${CFG.sbUrl||''}" onkeydown="if(event.key==='Enter')document.getElementById('inline-sb-key').focus()">
-    </div>
-    <div class="auth-field">
-      <input type="password" id="inline-sb-key" placeholder="Supabase Anon Key"  style="font-size:13px"
-        value="${CFG.sbKey||''}" onkeydown="if(event.key==='Enter')applyInlineConfig()">
-    </div>
-    <div class="auth-error" id="inline-error"></div>
-    <button class="btn-auth" onclick="applyInlineConfig()">Connect & Continue →</button>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">
-      Find these in Supabase → Settings → API
-    </div>
-  `;
-  // Insert before auth-footer
-  const footer = document.querySelector('.auth-footer');
-  footer ? footer.before(div) : document.querySelector('.auth-card').appendChild(div);
-  document.getElementById('inline-sb-url').focus();
+  document.getElementById('auth-sub').textContent = 'First time setup';
+  if (CFG.sbUrl) document.getElementById('inline-sb-url').value = CFG.sbUrl;
+  if (CFG.sbKey) document.getElementById('inline-sb-key').value = CFG.sbKey;
+  setTimeout(() => document.getElementById('inline-sb-url').focus(), 100);
 }
 
 function applyInlineConfig() {
-  const url = document.getElementById('inline-sb-url')?.value.trim();
-  const key = document.getElementById('inline-sb-key')?.value.trim();
+  const url = document.getElementById('inline-sb-url').value.trim();
+  const key = document.getElementById('inline-sb-key').value.trim();
   const errEl = document.getElementById('inline-error');
-  if (!url || !key) {
-    if (errEl) errEl.textContent = 'Both fields required';
-    return;
-  }
-  if (!url.includes('supabase.co')) {
-    if (errEl) errEl.textContent = 'URL should be https://xxxx.supabase.co';
-    return;
-  }
-  CFG.sbUrl = url; CFG.sbKey = key;
+  errEl.textContent = '';
+  if (!url) { errEl.textContent = 'Enter your Supabase URL'; return; }
+  if (!url.includes('supabase.co')) { errEl.textContent = 'URL must contain supabase.co'; return; }
+  if (!key || key.length < 20) { errEl.textContent = 'Enter your Supabase Anon Key'; return; }
+  CFG.sbUrl = url.replace(/\/$/, ''); CFG.sbKey = key;
   localStorage.setItem('nse_live_cfg', JSON.stringify(CFG));
-  // Hide config form, show signin form
-  document.getElementById('auth-config-inline').style.display = 'none';
+  document.getElementById('auth-config-section').style.display = 'none';
   document.getElementById('signin-form').style.display = 'block';
   document.getElementById('auth-sub').textContent = 'Sign in to your account';
-  // Re-init with new config
-  initAuth();
+  if (!initSupabase()) { errEl.textContent = 'Connection failed — check URL and key'; showConfigSection(); return; }
+  _setupAuthListener();
+  setTimeout(() => document.getElementById('auth-email').focus(), 100);
 }
 
 async function doSignIn() {
+  if (!_sb) { showConfigSection(); return; }
   const email = document.getElementById('auth-email').value.trim();
   const pass  = document.getElementById('auth-pass').value;
   const errEl = document.getElementById('auth-error');
   const btn   = document.getElementById('auth-btn');
   errEl.textContent = '';
-  if (!email || !pass) { errEl.textContent = 'Enter email and password'; return; }
+  if (!email) { errEl.textContent = 'Enter your email address'; return; }
+  if (!pass)  { errEl.textContent = 'Enter your password'; return; }
   btn.disabled = true; btn.textContent = 'Signing in...';
   const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
   if (error) {
-    errEl.textContent = error.message === 'Invalid login credentials'
-      ? 'Wrong email or password'
-      : error.message;
+    errEl.textContent = error.message === 'Invalid login credentials' ? 'Wrong email or password' : error.message;
     btn.disabled = false; btn.textContent = 'Sign In →';
   }
-  // On success, onAuthStateChange fires automatically
 }
 
 async function doSignOut() {
   if (!_sb) return;
   await _sb.auth.signOut();
-  showScreen('config-screen'); // reset view
   toast('Signed out');
 }
 
 function showForgotForm() {
   document.getElementById('signin-form').style.display = 'none';
   document.getElementById('forgot-form').style.display = 'block';
+  document.getElementById('auth-config-section').style.display = 'none';
   document.getElementById('auth-sub').textContent = 'Password Reset';
   const email = document.getElementById('auth-email').value;
   if (email) document.getElementById('reset-email').value = email;
+  setTimeout(() => document.getElementById('reset-email').focus(), 50);
 }
 
 function showSignInForm() {
   document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('auth-config-section').style.display = 'none';
   document.getElementById('signin-form').style.display = 'block';
   document.getElementById('auth-sub').textContent = 'Sign in to your account';
+  setTimeout(() => document.getElementById('auth-email').focus(), 50);
 }
 
 async function doResetPassword() {
   const email = document.getElementById('reset-email').value.trim();
   const errEl = document.getElementById('reset-error');
-  errEl.textContent = '';
+  errEl.textContent = ''; errEl.style.color = 'var(--red)';
   if (!email) { errEl.textContent = 'Enter your email'; return; }
-  const { error } = await _sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.href
-  });
+  if (!_sb) { errEl.textContent = 'Not connected to Supabase'; return; }
+  const { error } = await _sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
   if (error) { errEl.textContent = error.message; return; }
   errEl.style.color = 'var(--green)';
   errEl.textContent = '✅ Reset link sent! Check your email.';
 }
 
 function showPasswordUpdatePrompt() {
-  // Called when user clicks password reset link
   const newPass = prompt('Enter your new password (min 6 chars):');
   if (!newPass || newPass.length < 6) return;
   _sb.auth.updateUser({ password: newPass }).then(({ error }) => {
-    if (error) { showNotif('error', 'Error', error.message); return; }
-    showNotif('success', '✅ Password Updated', 'You are now signed in.');
+    if (error) showNotif('error', 'Error', error.message);
+    else showNotif('success', '✅ Password Updated', 'You are now signed in.');
   });
 }
 
 function toggleAuthEye() {
   const inp = document.getElementById('auth-pass');
   inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('auth-eye-btn').textContent = inp.type === 'password' ? '👁' : '🙈';
 }
+
 
 // ── ADMIN PANEL ───────────────────────────────────────────────
 async function loadAdminData() {
