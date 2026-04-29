@@ -497,24 +497,6 @@ body {
     <div class="auth-title">Trading Journal</div>
     <div class="auth-sub" id="auth-sub">Sign in to your account</div>
 
-    <!-- Supabase config — shown only on first visit (no saved config) -->
-    <div id="auth-config-section" style="display:none">
-      <div style="background:rgba(61,158,255,.08);border:1px solid rgba(61,158,255,.25);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--blue);margin-bottom:14px">
-        🔧 First time setup — enter your Supabase credentials
-      </div>
-      <div class="auth-field">
-        <input type="text" id="inline-sb-url" placeholder="Supabase Project URL  (https://xxxx.supabase.co)"
-          style="font-size:12px" onkeydown="if(event.key==='Enter')document.getElementById('inline-sb-key').focus()">
-      </div>
-      <div class="auth-field">
-        <input type="password" id="inline-sb-key" placeholder="Supabase Anon Key  (eyJhbGci...)"
-          style="font-size:12px" onkeydown="if(event.key==='Enter')applyInlineConfig()">
-      </div>
-      <div class="auth-error" id="inline-error"></div>
-      <button class="btn-auth" onclick="applyInlineConfig()" style="margin-bottom:14px">Save & Continue →</button>
-      <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px">
-    </div>
-
     <!-- Sign In Form -->
     <div id="signin-form">
       <div class="auth-field">
@@ -530,8 +512,6 @@ body {
       <button class="btn-auth" id="auth-btn" onclick="doSignIn()">Sign In →</button>
       <div style="text-align:center;margin-top:10px">
         <button class="auth-link" onclick="showForgotForm()">Forgot password?</button>
-        &nbsp;·&nbsp;
-        <button class="auth-link" onclick="showConfigSection()">Change config</button>
       </div>
     </div>
 
@@ -1026,8 +1006,8 @@ body {
 
 // ── CONFIG ──────────────────────────────────────────────────
 const CFG = {
-  sbUrl: '',
-  sbKey: '',
+  sbUrl: 'https://hehxbolrheumzpeharlm.supabase.co',
+  sbKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlaHhib2xyaGV1bXpwZWhhcmxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzMjA5MTIsImV4cCI6MjA2MDg5NjkxMn0.placeholder',
   proxyFnName: 'yahoo-proxy',
   telegramChatId: '',
   capital: 3000000,
@@ -2858,16 +2838,10 @@ function loadCustomSymbol(val) {
 // ── AUTH (Supabase) ──────────────────────────────────────────
 function initAuth() {
   document.getElementById('auth-screen').classList.remove('hidden');
-
-  if (!CFG.sbUrl || !CFG.sbKey) {
-    showConfigSection();
-    return;
-  }
-  document.getElementById('inline-sb-url').value = CFG.sbUrl;
-  document.getElementById('inline-sb-key').value = CFG.sbKey;
-  document.getElementById('auth-config-section').style.display = 'none';
-  document.getElementById('signin-form').style.display = 'block';
-  if (!initSupabase()) return;
+  // Load any saved config on top of defaults (telegram, risk%, etc)
+  const saved = localStorage.getItem('nse_live_cfg');
+  if (saved) { try { const s = JSON.parse(saved); Object.assign(CFG, s); } catch(e) {} }
+  initSupabase();
   _setupAuthListener();
 }
 
@@ -2899,7 +2873,7 @@ function _setupAuthListener() {
   });
 }
 
-function showConfigSection() {
+function showConfigSection() { /* removed — config hardcoded */ return;
   document.getElementById('auth-config-section').style.display = 'block';
   document.getElementById('signin-form').style.display = 'none';
   document.getElementById('forgot-form').style.display = 'none';
@@ -2909,7 +2883,7 @@ function showConfigSection() {
   setTimeout(() => document.getElementById('inline-sb-url').focus(), 100);
 }
 
-function applyInlineConfig() {
+function applyInlineConfig() { /* removed — config hardcoded */ return;
   const url = document.getElementById('inline-sb-url').value.trim();
   const key = document.getElementById('inline-sb-key').value.trim();
   const errEl = document.getElementById('inline-error');
@@ -2928,7 +2902,7 @@ function applyInlineConfig() {
 }
 
 async function doSignIn() {
-  if (!_sb) { showConfigSection(); return; }
+  if (!_sb) { document.getElementById('auth-error').textContent = 'Connection error. Please refresh.'; return; }
   const email = document.getElementById('auth-email').value.trim();
   const pass  = document.getElementById('auth-pass').value;
   const errEl = document.getElementById('auth-error');
