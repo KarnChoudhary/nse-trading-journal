@@ -501,11 +501,6 @@ body {
     <div class="cfg-title">Trading Journal</div>
     <div class="cfg-sub">Live market data · Real positions · Real discipline</div>
 
-    <div id="supabase-notice" class="supabase-notice" style="display:none">
-      ⚠️ Supabase not configured. Data will be stored locally only.
-      <a href="#" onclick="showSettings()">Configure now →</a>
-    </div>
-
     <div class="cfg-notice" id="market-notice">
       📡 Connecting to market data...
     </div>
@@ -573,26 +568,10 @@ body {
       <div style="font-size:10px;color:var(--text3);margin-top:3px">Your existing NMS bot token. Stored locally only.</div>
     </div>
 
-    <div class="field-group">
-      <label>Supabase URL</label>
-      <input id="cfg-sb-url" placeholder="https://xxxx.supabase.co" value="">
-    </div>
-
-    <div class="field-group">
-      <label>Supabase Edge Function Name</label>
-      <input id="cfg-proxy-fn" placeholder="e.g. yahoo-proxy or smart-action" value="yahoo-proxy">
-      <div style="font-size:10px;color:var(--text3);margin-top:3px">The name you gave your Edge Function in Supabase.</div>
-    </div>
-
-    <div class="field-group">
-      <label>Supabase Anon Key</label>
-      <input id="cfg-sb-key" placeholder="eyJhbGci..." value="" type="password">
-    </div>
-
     <div class="cfg-actions">
-      <button class="btn btn-primary" onclick="startApp()" style="flex:1">🚀 Launch Journal</button>
-      <button class="btn btn-secondary btn-sm" onclick="showScreen('journal-screen')">📓 Journal</button>
+      <button class="btn btn-primary" onclick="startApp()" style="flex:1;padding:12px;font-size:14px">🚀 Launch Journal</button>
     </div>
+
   </div>
 </div>
 
@@ -1840,9 +1819,22 @@ window.addEventListener('load', () => {
   loadConfig();
   const theme = localStorage.getItem('nse_theme');
   if (theme === 'light') document.documentElement.classList.add('light');
-  updateMarketNotice();
-  // Auto-launch app directly — no auth needed
-  setTimeout(startApp, 0);
+  // Set market status notice
+  const mn = document.getElementById('market-notice');
+  if (mn) {
+    const now = new Date();
+    const day = now.getDay(); // IST offset not critical for open/closed display
+    const h = now.getHours(), m = now.getMinutes();
+    const mins = h * 60 + m;
+    const isWeekday = day >= 1 && day <= 5;
+    const isOpen = isWeekday && mins >= 555 && mins <= 930;
+    mn.textContent = isOpen
+      ? '🟢 Market Open — Charts show data up to last close. New candle tomorrow.'
+      : '⚪ Market Closed — Showing last available EOD data.';
+    mn.style.background = isOpen ? 'rgba(0,200,150,.08)' : 'rgba(100,120,140,.08)';
+    mn.style.borderColor = isOpen ? 'var(--green)' : 'var(--border2)';
+    mn.style.color       = isOpen ? 'var(--green)' : 'var(--text2)';
+  }
 });
 
 function loadConfig() {
@@ -1877,10 +1869,10 @@ function saveConfig() {
 }
 
 async function startApp() {
-  saveConfig();
+  try { saveConfig(); } catch(e) { console.warn('saveConfig:', e); }
   showScreen('game-screen');
-  initCanvases();
-  try { await loadProfile(); } catch(e) { console.warn('Profile load failed:', e); }
+  try { initCanvases(); } catch(e) { console.error('Canvas init:', e); }
+  try { await loadProfile(); } catch(e) { console.warn('Profile:', e); }
   updateCapDisplay();
   try { await loadWatchlist(); } catch(e) { console.warn('Watchlist:', e); }
   try { await loadPositions(); } catch(e) { console.warn('Positions:', e); }
