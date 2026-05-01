@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>NSE Live Trading Journal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ── DESIGN SYSTEM ── */
 :root {
@@ -449,48 +450,15 @@ body {
   #sidebar { width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; }
 }
 
-/* ── LOGIN / AUTH SCREEN ── */
-#auth-screen {
-  position: fixed; inset: 0; z-index: 9999;
-  background: radial-gradient(ellipse at 30% 40%, #0a2040 0%, #080c12 70%);
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 16px;
-}
-:root.light #auth-screen { background: radial-gradient(ellipse at 30% 40%, #c8dff5 0%, #f2f6fa 70%); }
-#auth-screen.hidden { display: none; }
-.auth-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 36px 32px; width: 380px; max-width: 94vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-}
-.auth-logo { font-family: var(--font); font-size: 10px; color: var(--accent); letter-spacing: 4px; margin-bottom: 8px; text-align:center; }
-.auth-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-align:center; }
-.auth-sub { font-size: 12px; color: var(--text2); margin-bottom: 24px; text-align:center; }
-.auth-field { position: relative; margin-bottom: 12px; }
-.auth-field input {
-  width: 100%; background: var(--bg); border: 1px solid var(--border2);
-  color: var(--text); padding: 11px 14px; border-radius: 9px;
-  font-size: 14px; font-family: var(--font2); outline: none; transition: border-color .2s;
-}
-.auth-field input:focus { border-color: var(--accent); }
-.auth-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
-.btn-auth { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; margin-top: 4px; }
-.btn-auth:hover { opacity: .85; }
-.btn-auth:disabled { opacity: .4; cursor: not-allowed; }
-.auth-error { color: var(--red); font-size: 12px; min-height: 18px; margin: 6px 0; }
-.auth-link { background: none; border: none; color: var(--text3); font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; }
-.auth-footer { text-align: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text3); }
-/* Admin panel */
-.admin-user-row:hover td { background: var(--card); }
-.admin-stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
-.admin-stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; font-family: var(--font); letter-spacing: .5px; }
-.admin-stat-val { font-size: 20px; font-weight: 700; font-family: var(--font); margin-top: 2px; }
+/* ── AUTH/ADMIN REMOVED ── */
 
 </style>
 </head>
 <body>
+<!-- ════ AUTH SCREEN ════ -->
 
 <div id="app">
+
 
 <!-- ════════════════════════════════════════
      CONFIG / SETUP SCREEN
@@ -500,6 +468,11 @@ body {
     <div class="cfg-logo">NSE LIVE</div>
     <div class="cfg-title">Trading Journal</div>
     <div class="cfg-sub">Live market data · Real positions · Real discipline</div>
+
+    <div id="supabase-notice" class="supabase-notice" style="display:none">
+      ⚠️ Supabase not configured. Data will be stored locally only.
+      <a href="#" onclick="showSettings()">Configure now →</a>
+    </div>
 
     <div class="cfg-notice" id="market-notice">
       📡 Connecting to market data...
@@ -568,10 +541,26 @@ body {
       <div style="font-size:10px;color:var(--text3);margin-top:3px">Your existing NMS bot token. Stored locally only.</div>
     </div>
 
-    <div class="cfg-actions">
-      <button class="btn btn-primary" onclick="startApp()" style="flex:1;padding:12px;font-size:14px">🚀 Launch Journal</button>
+    <div class="field-group">
+      <label>Supabase URL</label>
+      <input id="cfg-sb-url" placeholder="https://xxxx.supabase.co" value="">
     </div>
 
+    <div class="field-group">
+      <label>Supabase Edge Function Name</label>
+      <input id="cfg-proxy-fn" placeholder="e.g. yahoo-proxy or smart-action" value="yahoo-proxy">
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">The name you gave your Edge Function in Supabase.</div>
+    </div>
+
+    <div class="field-group">
+      <label>Supabase Anon Key</label>
+      <input id="cfg-sb-key" placeholder="eyJhbGci..." value="" type="password">
+    </div>
+
+    <div class="cfg-actions">
+      <button class="btn btn-primary" onclick="startApp()" style="flex:1">🚀 Launch Journal</button>
+      <button class="btn btn-secondary btn-sm" onclick="showScreen('journal-screen')">📓 Journal</button>
+    </div>
   </div>
 </div>
 
@@ -583,11 +572,13 @@ body {
   <!-- LEFT SIDEBAR -->
   <div id="sidebar">
     <div class="sb-header">
-      <span class="sb-logo">NSE LIVE</span>
-      <div style="display:flex;gap:4px">
-        <button class="btn btn-xs btn-secondary" onclick="startScan()" title="Scan stocks">🔍</button>
+      <div style="flex:1;min-width:0">
+        <div class="sb-logo">NSE LIVE</div>
+        <div id="sb-username" style="font-size:9px;color:var(--text3);font-family:var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px"></div>
+      </div>
+      <div style="display:flex;gap:3px;flex-shrink:0">
+        <button class="btn btn-xs btn-secondary" onclick="startScan()" title="Scan">🔍</button>
         <button class="btn btn-xs btn-secondary" onclick="showScreen('config-screen')" title="Settings">⚙</button>
-        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()" title="Toggle theme">◐</button>
       </div>
     </div>
 
@@ -917,8 +908,8 @@ body {
 
 // ── CONFIG ──────────────────────────────────────────────────
 const CFG = {
-  sbUrl: 'https://hehxbolrheumzpeharlm.supabase.co',
-  sbKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlaHhib2xyaGV1bXpwZWhhcmxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzMjA5MTIsImV4cCI6MjA2MDg5NjkxMn0.placeholder',
+  sbUrl: '',
+  sbKey: '',
   proxyFnName: 'yahoo-proxy',
   telegramChatId: '',
   capital: 3000000,
@@ -1684,82 +1675,76 @@ const NSE_STOCKS = [
 ['ARTODN.NS','Artion','Healthcare',2000],
 ['MEDPLUSHL.NS','MedPlus Health Services','Healthcare',8000],
 ];
-];
 
 
-// ── SUPABASE CLIENT (simple REST — no auth) ─────────────────
-// Credentials hardcoded — anon key is safe to expose (RLS disabled for single user)
-const SB_URL = 'https://hehxbolrheumzpeharlm.supabase.co';
-const SB_KEY = 'sb_publishable_FRkaMlLApz8O283y7ShYow_Bre4MfmF'; // ← replace this
+// ── SUPABASE CLIENT (no-auth, anon key only) ─────────────────
+const LOCAL_DB = { watchlist: [], positions: [], dismissed: [] };
+let _sb = null;
 
-function _sbHeaders() {
-  return {
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
-  };
+function initSupabase() {
+  if (!CFG.sbUrl || !CFG.sbKey) return false;
+  _sb = window.supabase.createClient(CFG.sbUrl, CFG.sbKey);
+  return true;
 }
 
 async function sbGet(table, params = '') {
-  const r = await fetch(SB_URL + '/rest/v1/' + table + params, { headers: _sbHeaders() });
-  if (!r.ok) throw new Error('GET ' + table + ': ' + r.status);
-  return r.json();
+  if (!_sb) throw new Error('Supabase not initialised');
+  let q = _sb.from(table).select('*');
+  const parts = params.replace(/^\?/, '').split('&').filter(Boolean);
+  for (const p of parts) {
+    const eqIdx = p.indexOf('='); if (eqIdx < 0) continue;
+    const key = p.slice(0, eqIdx), val = decodeURIComponent(p.slice(eqIdx + 1));
+    if (key === 'order') { const [col, dir] = val.split('.'); q = q.order(col, { ascending: dir !== 'desc' }); }
+    else if (key === 'limit') { q = q.limit(parseInt(val)); }
+    else {
+      const dotIdx = key.indexOf('.'); if (dotIdx < 0) continue;
+      const col = key.slice(0, dotIdx), op = key.slice(dotIdx + 1);
+      if (op === 'eq') q = q.eq(col, val);
+      else if (op === 'neq') q = q.neq(col, val);
+      else if (op === 'gt') q = q.gt(col, val);
+      else if (op === 'lt') q = q.lt(col, val);
+    }
+  }
+  const { data, error } = await q;
+  if (error) throw new Error('sbGet ' + table + ': ' + error.message);
+  return data || [];
 }
 
 async function sbPost(table, body) {
-  // Inject fixed user_id for all tables that require it
-  const FIXED_USER = '00000000-0000-0000-0000-000000000001';
-  const row = { ...body, user_id: FIXED_USER };
-  const r = await fetch(SB_URL + '/rest/v1/' + table, {
-    method: 'POST', headers: _sbHeaders(), body: JSON.stringify(row)
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error('POST ' + table + ': ' + t); }
-  return r.json();
+  if (!_sb) throw new Error('Supabase not initialised');
+  // No user_id — no-auth mode
+  const { data, error } = await _sb.from(table).insert(body).select();
+  if (error) throw new Error('sbPost ' + table + ': ' + error.message);
+  return data || [];
 }
 
 async function sbPatch(table, id, body, idCol = 'id') {
-  const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + idCol + '=eq.' + id, {
-    method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error('PATCH ' + table + ': ' + r.status);
-  return r.json();
+  if (!_sb) throw new Error('Supabase not initialised');
+  const { data, error } = await _sb.from(table).update(body).eq(idCol, id).select();
+  if (error) throw new Error('sbPatch ' + table + ': ' + error.message);
+  return data || [];
 }
 
 async function sbDelete(table, id, idCol = 'id') {
-  const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + idCol + '=eq.' + id, {
-    method: 'DELETE', headers: _sbHeaders()
-  });
-  return r.ok;
-}
-
-async function loadProfile() {
-  // No auth — use settings table with fixed id='default'
-  try {
-    const rows = await sbGet('settings', '?id=eq.default');
-    if (rows && rows.length) {
-      CFG.capital      = rows[0].capital      ?? CFG.capital;
-      CFG.startCapital = rows[0].start_capital ?? CFG.startCapital;
-      CFG.riskPct      = rows[0].risk_pct      ?? CFG.riskPct;
-    }
-  } catch(e) { /* use defaults */ }
+  if (!_sb) throw new Error('Supabase not initialised');
+  const { error } = await _sb.from(table).delete().eq(idCol, id);
+  return !error;
 }
 
 async function saveCapitalToDB() {
-  try {
-    // Upsert settings row
-    const r = await fetch(SB_URL + '/rest/v1/settings', {
-      method: 'POST',
-      headers: { ..._sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({
-        id: 'default', capital: CFG.capital,
-        start_capital: CFG.startCapital,
-        risk_pct: CFG.riskPct,
-        updated_at: new Date().toISOString()
-      })
-    });
-    if (!r.ok) throw new Error(await r.text());
-  } catch(e) { console.warn('saveCapital:', e.message); }
+  localStorage.setItem('nse_capital', JSON.stringify({ capital: CFG.capital, startCapital: CFG.startCapital }));
+  if (!_sb) return;
+  try { await _sb.from('settings').upsert({ id: 'default', capital: CFG.capital, start_capital: CFG.startCapital, updated_at: new Date().toISOString() }); } catch(e) {}
+}
+
+async function loadCapitalFromDB() {
+  if (_sb) {
+    try {
+      const { data } = await _sb.from('settings').select('capital,start_capital').eq('id', 'default').single();
+      if (data) { CFG.capital = data.capital ?? CFG.capital; CFG.startCapital = data.start_capital ?? CFG.startCapital; return; }
+    } catch(e) {}
+  }
+  try { const s = JSON.parse(localStorage.getItem('nse_capital') || '{}'); if (s.capital) CFG.capital = s.capital; if (s.startCapital) CFG.startCapital = s.startCapital; } catch(e) {}
 }
 
 // ── YAHOO FINANCE PROXY ──────────────────────────────────────
@@ -1771,13 +1756,8 @@ function getProxyUrl() {
 
 async function fetchChart(symbol, range = '1y', interval = '1d') {
   const proxy = getProxyUrl();
-  let url;
-  if (CFG.sbUrl) {
-    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}&action=chart`;
-  } else {
-    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
-  }
-  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  const url = `${proxy}?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}&action=chart`;
+  const headers = CFG.sbKey ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`Chart fetch failed: ${r.status}`);
   return r.json();
@@ -1785,16 +1765,25 @@ async function fetchChart(symbol, range = '1y', interval = '1d') {
 
 async function fetchQuote(symbol) {
   const proxy = getProxyUrl();
-  let url;
-  if (CFG.sbUrl) {
-    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&action=quote`;
-  } else {
-    url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
-  }
-  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  const url = `${proxy}?symbol=${encodeURIComponent(symbol)}&action=quote`;
+  const headers = CFG.sbKey ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`Quote fetch failed: ${r.status}`);
-  return r.json();
+  const json = await r.json();
+  // Proxy returns v8/chart format for both quote and chart actions
+  const meta = json?.chart?.result?.[0]?.meta;
+  if (!meta) return null;
+  const prev = meta.chartPreviousClose || meta.regularMarketPrice;
+  return {
+    regularMarketPrice: meta.regularMarketPrice,
+    regularMarketChangePercent: prev ? ((meta.regularMarketPrice - prev) / prev * 100) : 0,
+    marketCap: meta.marketCap || 0,
+    shortName: meta.shortName,
+    longName: meta.longName,
+    fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+    regularMarketVolume: meta.regularMarketVolume,
+  };
 }
 
 // Parse Yahoo Finance chart response
@@ -1819,37 +1808,24 @@ window.addEventListener('load', () => {
   loadConfig();
   const theme = localStorage.getItem('nse_theme');
   if (theme === 'light') document.documentElement.classList.add('light');
-  // Set market status notice
-  const mn = document.getElementById('market-notice');
-  if (mn) {
-    const now = new Date();
-    const day = now.getDay(); // IST offset not critical for open/closed display
-    const h = now.getHours(), m = now.getMinutes();
-    const mins = h * 60 + m;
-    const isWeekday = day >= 1 && day <= 5;
-    const isOpen = isWeekday && mins >= 555 && mins <= 930;
-    mn.textContent = isOpen
-      ? '🟢 Market Open — Charts show data up to last close. New candle tomorrow.'
-      : '⚪ Market Closed — Showing last available EOD data.';
-    mn.style.background = isOpen ? 'rgba(0,200,150,.08)' : 'rgba(100,120,140,.08)';
-    mn.style.borderColor = isOpen ? 'var(--green)' : 'var(--border2)';
-    mn.style.color       = isOpen ? 'var(--green)' : 'var(--text2)';
-  }
+  updateMarketNotice();
+  // No auth — config screen shown by default
 });
 
 function loadConfig() {
   const saved = localStorage.getItem('nse_live_cfg');
   if (saved) { try { Object.assign(CFG, JSON.parse(saved)); } catch(e) {} }
-  const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  s('cfg-name',    CFG.traderName || '');
-  s('cfg-capital', CFG.capital || 3000000);
-  s('cfg-risk',    CFG.riskPct || 1);
-  s('cfg-cap-min', CFG.capMin || 1000);
-  s('cfg-cap-max', CFG.capMax || '');
-  s('cfg-telegram', CFG.telegramChatId || '');
-  s('cfg-tg-token', localStorage.getItem('nse_tg_token') || '');
-  s('cfg-proxy-fn', CFG.proxyFnName || 'yahoo-proxy');
-  s('cfg-sector',   CFG.sector || 'all');
+  document.getElementById('cfg-name').value = CFG.traderName || '';
+  document.getElementById('cfg-capital').value = CFG.capital || 3000000;
+  document.getElementById('cfg-risk').value = CFG.riskPct || 1;
+  document.getElementById('cfg-cap-min').value = CFG.capMin || 1000;
+  document.getElementById('cfg-cap-max').value = CFG.capMax || '';
+  document.getElementById('cfg-telegram').value = CFG.telegramChatId || '';
+  document.getElementById('cfg-tg-token').value = localStorage.getItem('nse_tg_token') || '';
+  document.getElementById('cfg-sb-url').value = CFG.sbUrl || '';
+  document.getElementById('cfg-proxy-fn').value = CFG.proxyFnName || 'yahoo-proxy';
+  document.getElementById('cfg-sb-key').value = CFG.sbKey || '';
+  document.getElementById('cfg-sector').value = CFG.sector || 'all';
 }
 
 function saveConfig() {
@@ -1859,577 +1835,35 @@ function saveConfig() {
   CFG.riskPct = parseFloat(document.getElementById('cfg-risk').value) || 1;
   CFG.capMin = parseFloat(document.getElementById('cfg-cap-min').value) || 1000;
   CFG.capMax = parseFloat(document.getElementById('cfg-cap-max').value) || null;
-  CFG.telegramChatId = (document.getElementById('cfg-telegram')?.value || '').trim();
-  const tgEl = document.getElementById('cfg-tg-token');
-  if (tgEl?.value.trim()) localStorage.setItem('nse_tg_token', tgEl.value.trim());
-  const proxyEl = document.getElementById('cfg-proxy-fn');
-  if (proxyEl) CFG.proxyFnName = proxyEl.value.trim() || 'yahoo-proxy';
+  CFG.telegramChatId = document.getElementById('cfg-telegram').value.trim();
+  const tgToken = document.getElementById('cfg-tg-token').value.trim();
+  if (tgToken) localStorage.setItem('nse_tg_token', tgToken);
+  CFG.sbUrl = document.getElementById('cfg-sb-url').value.trim();
+  CFG.proxyFnName = document.getElementById('cfg-proxy-fn').value.trim() || 'yahoo-proxy';
+  CFG.sbKey = document.getElementById('cfg-sb-key').value.trim();
   CFG.sector = document.getElementById('cfg-sector').value;
   localStorage.setItem('nse_live_cfg', JSON.stringify(CFG));
 }
 
 async function startApp() {
-  try { saveConfig(); } catch(e) { console.warn('saveConfig:', e); }
+  saveConfig();
+  if (!CFG.sbUrl || !CFG.sbKey) {
+    showNotif('error', 'Config Missing', 'Please enter Supabase URL and Anon Key');
+    return;
+  }
+  if (!initSupabase()) { showNotif('error', 'Init Failed', 'Could not connect to Supabase'); return; }
   showScreen('game-screen');
-  try { initCanvases(); } catch(e) { console.error('Canvas init:', e); }
-  try { await loadProfile(); } catch(e) { console.warn('Profile:', e); }
+  initCanvases();
+  await loadCapitalFromDB();
   updateCapDisplay();
-  try { await loadWatchlist(); } catch(e) { console.warn('Watchlist:', e); }
-  try { await loadPositions(); } catch(e) { console.warn('Positions:', e); }
+  try { await loadWatchlist(); } catch(e) { console.warn('WL:', e.message); }
+  try { await loadPositions(); } catch(e) { console.warn('Pos:', e.message); }
   updateStats();
   checkAlerts();
   showLoading(false);
+  document.getElementById('sb-username').textContent = CFG.traderName || 'Trader';
   const firstWL = _watchlistCache.find(w => w.status === 'watching' || w.status === 'in_trade');
   if (firstWL) loadStock(firstWL.symbol);
-}
-
-
-function initCanvases() {
-  const wrap = document.getElementById('canvas-wrap');
-  const mc = document.getElementById('main-canvas');
-  const dc = document.getElementById('draw-canvas');
-  const vw = document.getElementById('vol-wrap');
-  const vc = document.getElementById('vol-canvas');
-  function resize() {
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    mc.width = dc.width = W; mc.height = dc.height = H;
-    vc.width = vw.clientWidth; vc.height = vw.clientHeight;
-    if (G.currentData) drawAll();
-  }
-  G.mCtx = mc.getContext('2d');
-  G.dCtx = dc.getContext('2d');
-  G.vCtx = vc.getContext('2d');
-  new ResizeObserver(resize).observe(wrap);
-  resize();
-  setupDrawEvents(dc);
-}
-
-// ── LOAD STOCK CHART ─────────────────────────────────────────
-async function loadStock(symbol, skipCache = false) {
-  if (!symbol) return;
-  G.currentSymbol = symbol;
-  showLoading(true, `Loading ${symbol}...`);
-  document.getElementById('scrip-sym').textContent = symbol.replace('.NS','');
-  document.getElementById('scrip-fullname').textContent = '—';
-  try {
-    // Determine Yahoo range based on TF
-    const range = G.currentTF === 'M' ? '5y' : '2y';
-    const interval = G.currentTF === 'D' ? '1d' : G.currentTF === 'W' ? '1wk' : '1mo';
-    const json = await fetchChart(symbol, range, interval);
-    const data = parseChartData(json);
-    G.currentData = data;
-    G.currentMeta = data.meta;
-    // Set view to show last ~120 candles
-    const n = data.closes.length;
-    G.viewStart = Math.max(0, n - 120);
-    drawAll();
-    drawVolume();
-    // Fetch quote for metadata
-    await refreshQuote(symbol);
-    // Update active position info
-    await loadActivePosition(symbol);
-    showLoading(false);
-    // Mark active in watchlist
-    document.querySelectorAll('.wl-item').forEach(el => el.classList.remove('active-wl'));
-    const wlEl = document.querySelector(`.wl-item[data-sym="${symbol}"]`);
-    if (wlEl) wlEl.classList.add('active-wl');
-  } catch(e) {
-    showLoading(false);
-    showNotif('error', '⚠ Data Error', `Could not load ${symbol}: ${e.message}`);
-  }
-}
-
-async function refreshQuote(symbol) {
-  try {
-    const json = await fetchQuote(symbol);
-    const q = json?.quoteResponse?.result?.[0];
-    if (!q) return;
-    const price = q.regularMarketPrice || 0;
-    const chgPct = q.regularMarketChangePercent || 0;
-    const name = q.shortName || q.longName || symbol;
-    const mcap = q.marketCap || 0;
-    const hi52 = q.fiftyTwoWeekHigh || 0;
-    const lo52 = q.fiftyTwoWeekLow || 0;
-    document.getElementById('scrip-fullname').textContent = name;
-    document.getElementById('price-badge').textContent = '₹' + fp(price);
-    document.getElementById('price-badge').style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
-    document.getElementById('chg-badge').textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
-    document.getElementById('chg-badge').style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
-    document.getElementById('oi-52').textContent = `${fp(lo52)} – ${fp(hi52)}`;
-    document.getElementById('oi-mcap').textContent = formatMcap(mcap);
-    G.currentMeta = { ...G.currentMeta, price, name, mcap, chgPct, hi52, lo52 };
-  } catch(e) { /* quote fetch failed — non-critical */ }
-}
-
-async function refreshChart() {
-  if (G.currentSymbol) await loadStock(G.currentSymbol, true);
-}
-
-function switchTF(tf) {
-  G.currentTF = tf;
-  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`tf-${tf}`)?.classList.add('active');
-  if (G.currentSymbol) loadStock(G.currentSymbol);
-}
-
-// ── CHART DRAWING ─────────────────────────────────────────────
-function drawAll() {
-  const ctx = G.mCtx;
-  if (!ctx || !G.currentData) return;
-  const W = ctx.canvas.width, H = ctx.canvas.height;
-  const p = G.chartPad;
-  ctx.clearRect(0, 0, W, H);
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim();
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  const data = G.currentData;
-  const n = data.closes.length;
-  if (!n) return;
-
-  const viewEnd = n;
-  const viewStart = G.viewStart;
-  const viewCount = viewEnd - viewStart;
-  if (viewCount <= 0) return;
-
-  const chartW = W - p.l - p.r;
-  const chartH = H - p.t - p.b;
-  const cw = Math.max(2, Math.floor(chartW / viewCount) - 1);
-  G.candleW = cw;
-
-  // Find min/max in view
-  let minP = Infinity, maxP = -Infinity;
-  for (let i = viewStart; i < viewEnd; i++) {
-    if (data.lows[i] > 0) minP = Math.min(minP, data.lows[i]);
-    if (data.highs[i] > 0) maxP = Math.max(maxP, data.highs[i]);
-  }
-  if (!isFinite(minP)) return;
-  const pad = (maxP - minP) * 0.05;
-  const priceMin = minP - pad, priceMax = maxP + pad;
-  const priceRange = priceMax - priceMin;
-  G._scaleInfo = { priceMin, priceMax, priceRange, viewStart, viewEnd, chartW, chartH, cw, p };
-
-  function py(price) { return p.t + chartH * (1 - (price - priceMin) / priceRange); }
-  function px(i) { return p.l + (i - viewStart) * (cw + 1) + cw / 2; }
-
-  // Grid
-  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
-  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim();
-  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
-  const gridLines = 6;
-  ctx.font = `10px "JetBrains Mono", monospace`;
-  ctx.fillStyle = textColor;
-  for (let g = 0; g <= gridLines; g++) {
-    const price = priceMin + (priceRange * g / gridLines);
-    const y = py(price);
-    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y);
-    ctx.setLineDash([2, 4]); ctx.stroke(); ctx.setLineDash([]);
-    ctx.textAlign = 'right';
-    ctx.fillText(fp(price), W - 4, y + 3);
-  }
-
-  // X-axis dates
-  ctx.textAlign = 'center';
-  const dateStep = Math.ceil(viewCount / 8);
-  for (let i = viewStart; i < viewEnd; i += dateStep) {
-    const ts = data.timestamps[i];
-    if (!ts) continue;
-    const d = new Date(ts * 1000);
-    const label = G.currentTF === 'D' ? `${d.getDate()}/${d.getMonth()+1}` :
-      G.currentTF === 'W' ? `W${getWeek(d)}` : `${d.toLocaleString('default',{month:'short'})}`;
-    ctx.fillStyle = textColor;
-    ctx.fillText(label, px(i), H - 8);
-  }
-
-  // EMAs
-  const emaColors = { 9: '#f0a500', 21: '#3d9eff', 50: '#ff4560', 200: '#8b5cf6' };
-  [9, 21, 50, 200].forEach(period => {
-    if (!G.emas[period]) return;
-    const ema = calcEMA(data.closes, period);
-    ctx.beginPath(); ctx.strokeStyle = emaColors[period]; ctx.lineWidth = 1.2;
-    let started = false;
-    for (let i = viewStart; i < viewEnd; i++) {
-      if (!ema[i]) continue;
-      const x = px(i), y = py(ema[i]);
-      if (!started) { ctx.moveTo(x, y); started = true; }
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  });
-
-  // Position SL / Entry line
-  if (G.openPosition) {
-    const pos = G.openPosition;
-    // Entry line
-    ctx.strokeStyle = 'rgba(0,229,176,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
-    const ey = py(pos.entry_price);
-    ctx.beginPath(); ctx.moveTo(p.l, ey); ctx.lineTo(W - p.r, ey); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(0,229,176,0.8)'; ctx.textAlign = 'right'; ctx.font = '10px monospace';
-    ctx.fillText(`ENTRY ${fp(pos.entry_price)}`, W - 2, ey - 3);
-    // SL line
-    const sl = pos.trail_sl || pos.stop_loss;
-    ctx.strokeStyle = 'rgba(255,69,96,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
-    const sy = py(sl);
-    ctx.beginPath(); ctx.moveTo(p.l, sy); ctx.lineTo(W - p.r, sy); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(255,69,96,0.8)'; ctx.textAlign = 'right';
-    ctx.fillText(`SL ${fp(sl)}`, W - 2, sy - 3);
-  }
-
-  // Candles
-  for (let i = viewStart; i < viewEnd; i++) {
-    const o = data.opens[i], h = data.highs[i], l = data.lows[i], c = data.closes[i];
-    if (!o || !c) continue;
-    const x = p.l + (i - viewStart) * (cw + 1);
-    const isUp = c >= o;
-    const col = isUp ? '#00c896' : '#ff4560';
-    const wickX = x + cw / 2;
-    ctx.strokeStyle = col; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(wickX, py(h)); ctx.lineTo(wickX, py(l)); ctx.stroke();
-    ctx.fillStyle = isUp ? col : col;
-    const y1 = py(Math.max(o, c)), y2 = py(Math.min(o, c));
-    const ch = Math.max(1, y2 - y1);
-    if (isUp) { ctx.strokeStyle = col; ctx.strokeRect(x, y1, cw, ch); }
-    else { ctx.fillRect(x, y1, cw, ch); }
-  }
-
-  // Current price line
-  const lastClose = data.closes[n - 1];
-  if (lastClose && lastClose >= priceMin && lastClose <= priceMax) {
-    const y = py(lastClose);
-    ctx.strokeStyle = 'rgba(0,229,176,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([2,4]);
-    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'var(--accent)'; ctx.fillStyle = '#00e5b0';
-    ctx.fillRect(W - p.r, y - 8, p.r, 16);
-    ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
-    ctx.fillText(fp(lastClose), W - p.r / 2, y + 4);
-  }
-
-  redrawDrawings();
-  updateOHLC();
-}
-
-function drawVolume() {
-  const ctx = G.vCtx;
-  if (!ctx || !G.currentData) return;
-  const W = ctx.canvas.width, H = ctx.canvas.height;
-  ctx.clearRect(0, 0, W, H);
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim();
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const data = G.currentData;
-  const si = G._scaleInfo;
-  if (!si) return;
-  const { viewStart, viewEnd, cw, p } = si;
-  const vols = data.volumes.slice(viewStart, viewEnd).filter(v => v > 0);
-  const maxV = Math.max(...vols);
-  if (!maxV) return;
-  for (let i = viewStart; i < viewEnd; i++) {
-    const v = data.volumes[i];
-    if (!v) continue;
-    const isUp = data.closes[i] >= data.opens[i];
-    const x = p.l + (i - viewStart) * (cw + 1);
-    const bh = (v / maxV) * (H - 14);
-    ctx.fillStyle = isUp ? 'rgba(0,200,150,0.35)' : 'rgba(255,69,96,0.35)';
-    ctx.fillRect(x, H - bh, cw, bh);
-  }
-  // Max vol label
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim();
-  ctx.font = '9px monospace'; ctx.textAlign = 'right';
-  ctx.fillText(fv(maxV), W - 2, 12);
-}
-
-function updateOHLC() {
-  const data = G.currentData;
-  if (!data) return;
-  const n = data.closes.length;
-  if (!n) return;
-  const i = n - 1;
-  const chg = data.closes[i] - data.opens[i];
-  const chgPct = (chg / data.opens[i] * 100).toFixed(2);
-  document.getElementById('oi-o').textContent = fp(data.opens[i]);
-  document.getElementById('oi-h').textContent = fp(data.highs[i]);
-  document.getElementById('oi-l').textContent = fp(data.lows[i]);
-  document.getElementById('oi-c').textContent = fp(data.closes[i]);
-  document.getElementById('oi-v').textContent = fv(data.volumes[i] || 0);
-}
-
-function calcEMA(closes, period) {
-  const ema = [];
-  const k = 2 / (period + 1);
-  let prev = null;
-  for (let i = 0; i < closes.length; i++) {
-    const c = closes[i];
-    if (!c) { ema.push(null); continue; }
-    if (prev === null) {
-      if (i >= period - 1) {
-        const slice = closes.slice(Math.max(0, i - period + 1), i + 1).filter(Boolean);
-        prev = slice.reduce((a, b) => a + b, 0) / slice.length;
-        ema.push(prev);
-      } else ema.push(null);
-    } else {
-      prev = c * k + prev * (1 - k);
-      ema.push(prev);
-    }
-  }
-  return ema;
-}
-
-function toggleEMA(period) {
-  G.emas[period] = !G.emas[period];
-  document.getElementById(`em${period}`)?.classList.toggle('on', G.emas[period]);
-  drawAll();
-}
-
-// ── DRAWING TOOLS ─────────────────────────────────────────────
-function setTool(t) {
-  G.tool = G.tool === t ? null : t;
-  document.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
-  if (G.tool) document.getElementById(`tool-${G.tool}`)?.classList.add('active');
-  document.getElementById('draw-canvas').style.cursor = G.tool ? 'crosshair' : 'default';
-}
-
-function setupDrawEvents(canvas) {
-  let panStart = null;
-  let panViewStart = 0;
-
-  canvas.addEventListener('mousedown', e => {
-    const {x, y} = getCanvasPos(e);
-    if (G.tool) {
-      // Convert pixel to price coords for anchored drawings
-      const pc = pixelToPrice(x, y);
-      G.isDrawing = true;
-      G.drawStart = { x, y, bar: pc.bar, price: pc.price };
-      return;
-    }
-    // Start pan
-    panStart = { x, viewStart: G.viewStart };
-    canvas.style.cursor = 'grabbing';
-  });
-
-  canvas.addEventListener('mousemove', e => {
-    const {x, y} = getCanvasPos(e);
-
-    // Draw crosshair on draw canvas
-    drawCrosshair(x, y);
-
-    if (G.isDrawing && G.drawStart) {
-      // Live preview of drawing
-      redrawDrawings();
-      const dCtx = G.dCtx;
-      dCtx.strokeStyle = 'rgba(0,229,176,0.75)'; dCtx.lineWidth = 1.5;
-      dCtx.setLineDash([5, 4]);
-      dCtx.beginPath(); dCtx.moveTo(G.drawStart.x, G.drawStart.y); dCtx.lineTo(x, y); dCtx.stroke();
-      dCtx.setLineDash([]);
-      return;
-    }
-
-    if (panStart) {
-      // Drag to pan — 1 candle per ~10px
-      const data = G.currentData;
-      if (!data) return;
-      const dx = panStart.x - x;
-      const si = G._scaleInfo;
-      const step = si ? (si.cw + 1) : 10;
-      const shift = Math.round(dx / step);
-      const n = data.closes.length;
-      G.viewStart = Math.max(0, Math.min(n - 20, panViewStart + shift));
-      drawAll(); drawVolume();
-      return;
-    }
-
-    showOHLCForX(x);
-  });
-
-  canvas.addEventListener('mouseup', e => {
-    if (G.isDrawing && G.drawStart) {
-      const {x, y} = getCanvasPos(e);
-      const pc = pixelToPrice(x, y);
-      // Store drawings in price/bar space so they stay after zoom/pan
-      G.drawings.push({
-        type: G.tool,
-        bar1: G.drawStart.bar, price1: G.drawStart.price,
-        bar2: pc.bar, price2: pc.price,
-      });
-      G.isDrawing = false; G.drawStart = null;
-      redrawDrawings();
-    }
-    if (panStart) {
-      panStart = null;
-      panViewStart = G.viewStart;
-      canvas.style.cursor = 'crosshair';
-    }
-  });
-
-  canvas.addEventListener('mouseleave', () => {
-    panStart = null;
-    G.isDrawing = false;
-    G.drawStart = null;
-    G.dCtx.clearRect(0, 0, G.dCtx.canvas.width, G.dCtx.canvas.height);
-    redrawDrawings();
-    canvas.style.cursor = 'crosshair';
-  });
-
-  // Wheel: zoom (change visible candle count)
-  canvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    const data = G.currentData;
-    if (!data) return;
-    const n = data.closes.length;
-    const si = G._scaleInfo;
-    const visibleNow = si ? (si.viewEnd - si.viewStart) : 120;
-    if (e.deltaY < 0) {
-      // Zoom in — fewer candles
-      const newVisible = Math.max(20, visibleNow - 15);
-      G.viewStart = Math.max(0, n - newVisible);
-    } else {
-      // Zoom out — more candles
-      const newVisible = Math.min(n, visibleNow + 15);
-      G.viewStart = Math.max(0, n - newVisible);
-    }
-    drawAll(); drawVolume();
-  }, { passive: false });
-
-  // Touch support for mobile
-  let touchStartX = null;
-  let touchViewStart = 0;
-  canvas.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    touchViewStart = G.viewStart;
-  }, { passive: true });
-  canvas.addEventListener('touchmove', e => {
-    if (touchStartX === null) return;
-    const dx = touchStartX - e.touches[0].clientX;
-    const si = G._scaleInfo;
-    const step = si ? (si.cw + 1) : 10;
-    const shift = Math.round(dx / step);
-    const data = G.currentData;
-    if (!data) return;
-    G.viewStart = Math.max(0, Math.min(data.closes.length - 20, touchViewStart + shift));
-    drawAll(); drawVolume();
-  }, { passive: true });
-}
-
-function getCanvasPos(e) {
-  const rect = e.target.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-// Convert pixel X/Y on chart to {bar index, price}
-function pixelToPrice(x, y) {
-  const si = G._scaleInfo;
-  if (!si) return { bar: 0, price: 0 };
-  const { viewStart, cw, p, priceMin, priceRange, chartH } = si;
-  const bar = viewStart + Math.floor((x - p.l) / (cw + 1));
-  const price = priceMin + priceRange * (1 - (y - p.t) / chartH);
-  return { bar: Math.max(0, bar), price };
-}
-
-// Convert {bar, price} back to pixel X/Y
-function priceToPixel(bar, price) {
-  const si = G._scaleInfo;
-  if (!si) return { x: 0, y: 0 };
-  const { viewStart, cw, p, priceMin, priceRange, chartH } = si;
-  const x = p.l + (bar - viewStart) * (cw + 1) + cw / 2;
-  const y = p.t + chartH * (1 - (price - priceMin) / priceRange);
-  return { x, y };
-}
-
-function drawCrosshair(mx, my) {
-  const dCtx = G.dCtx;
-  const W = dCtx.canvas.width, H = dCtx.canvas.height;
-  const si = G._scaleInfo;
-  dCtx.clearRect(0, 0, W, H);
-  redrawDrawings();
-  if (!si) return;
-
-  const { p } = si;
-  // Only draw inside chart area
-  if (mx < p.l || mx > W - p.r || my < p.t || my > H - p.b) return;
-
-  dCtx.save();
-  dCtx.strokeStyle = 'rgba(140,160,180,0.35)';
-  dCtx.lineWidth = 1;
-  dCtx.setLineDash([3, 4]);
-  // Vertical line
-  dCtx.beginPath(); dCtx.moveTo(mx, p.t); dCtx.lineTo(mx, H - p.b); dCtx.stroke();
-  // Horizontal line
-  dCtx.beginPath(); dCtx.moveTo(p.l, my); dCtx.lineTo(W - p.r, my); dCtx.stroke();
-  dCtx.setLineDash([]);
-
-  // Price label on right axis
-  const pc = pixelToPrice(mx, my);
-  dCtx.fillStyle = 'rgba(0,229,176,0.85)';
-  const labelW = 62, labelH = 16;
-  dCtx.fillRect(W - p.r, my - labelH / 2, labelW, labelH);
-  dCtx.fillStyle = '#000';
-  dCtx.font = 'bold 10px monospace';
-  dCtx.textAlign = 'center';
-  dCtx.fillText(fp(pc.price), W - p.r + labelW / 2, my + 4);
-
-  // Date label on x axis
-  const data = G.currentData;
-  if (data && pc.bar >= 0 && pc.bar < data.timestamps.length) {
-    const ts = data.timestamps[pc.bar];
-    if (ts) {
-      const d = new Date(ts * 1000);
-      const label = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear().toString().slice(2)}`;
-      dCtx.fillStyle = 'rgba(0,229,176,0.85)';
-      dCtx.fillRect(mx - 28, H - p.b, 56, 16);
-      dCtx.fillStyle = '#000';
-      dCtx.textAlign = 'center';
-      dCtx.fillText(label, mx, H - p.b + 11);
-    }
-  }
-  dCtx.restore();
-
-  showOHLCForX(mx);
-}
-
-function redrawDrawings() {
-  const dCtx = G.dCtx;
-  const si = G._scaleInfo;
-  if (!si) return;
-  const W = dCtx.canvas.width;
-
-  G.drawings.forEach(d => {
-    const p1 = priceToPixel(d.bar1, d.price1);
-    const p2 = priceToPixel(d.bar2, d.price2);
-    dCtx.strokeStyle = 'rgba(240,165,0,0.8)';
-    dCtx.lineWidth = 1.5;
-    dCtx.beginPath();
-    if (d.type === 'hline') {
-      dCtx.moveTo(0, p1.y); dCtx.lineTo(W, p1.y);
-    } else if (d.type === 'trend') {
-      dCtx.moveTo(p1.x, p1.y); dCtx.lineTo(p2.x, p2.y);
-    } else if (d.type === 'ray') {
-      // Extend ray to right edge of canvas
-      const dx = p2.x - p1.x, dy = p2.y - p1.y;
-      if (dx !== 0) {
-        const ext = (W - p1.x) / dx;
-        dCtx.moveTo(p1.x, p1.y);
-        dCtx.lineTo(p1.x + dx * ext, p1.y + dy * ext);
-      }
-    }
-    dCtx.stroke();
-  });
-}
-
-function clearDrawings() { G.drawings = []; G.dCtx.clearRect(0,0,G.dCtx.canvas.width,G.dCtx.canvas.height); }
-
-function showOHLCForX(x) {
-  const si = G._scaleInfo;
-  const data = G.currentData;
-  if (!si || !data) return;
-  const { viewStart, cw, p } = si;
-  const i = viewStart + Math.floor((x - p.l) / (cw + 1));
-  if (i < 0 || i >= data.closes.length) return;
-  document.getElementById('oi-o').textContent = fp(data.opens[i] || 0);
-  document.getElementById('oi-h').textContent = fp(data.highs[i] || 0);
-  document.getElementById('oi-l').textContent = fp(data.lows[i] || 0);
-  document.getElementById('oi-c').textContent = fp(data.closes[i] || 0);
-  document.getElementById('oi-v').textContent = fv(data.volumes[i] || 0);
 }
 
 // ── CAPITAL ───────────────────────────────────────────────────
@@ -2800,25 +2234,13 @@ async function loadNextScanStock() {
   document.getElementById('scan-status').textContent =
     `${G.scanIndex + 1} / ${G.scanQueue.length} · Remaining: ${G.scanQueue.length - G.scanIndex - 1}`;
 
-  // Fetch live quote
   try {
-    const json = await fetchQuote(sym);
-    const q = json?.quoteResponse?.result?.[0];
+    const q = await fetchQuote(sym);
     G.scanCurrentMeta = q;
     if (q) {
-      const mcapCr = (q.marketCap || 0) / 1e7; // convert to Crore
-      // Apply LIVE market cap filter
-      if (CFG.capMin && mcapCr < CFG.capMin) {
-        // Auto-skip stocks below cap filter — no need to show to user
-        G.scanIndex++;
-        await loadNextScanStock();
-        return;
-      }
-      if (CFG.capMax && mcapCr > CFG.capMax) {
-        G.scanIndex++;
-        await loadNextScanStock();
-        return;
-      }
+      const mcapCr = (q.marketCap || 0) / 1e7;
+      if (CFG.capMin && mcapCr < CFG.capMin) { G.scanIndex++; await loadNextScanStock(); return; }
+      if (CFG.capMax && mcapCr > CFG.capMax) { G.scanIndex++; await loadNextScanStock(); return; }
       document.getElementById('scan-price').textContent = '₹' + fp(q.regularMarketPrice || 0);
       document.getElementById('scan-mcap').textContent = formatMcap(q.marketCap || 0);
       document.getElementById('scan-52h').textContent = '₹' + fp(q.fiftyTwoWeekHigh || 0);
@@ -2826,14 +2248,9 @@ async function loadNextScanStock() {
       const chg = q.regularMarketChangePercent || 0;
       document.getElementById('scan-chg').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
       document.getElementById('scan-chg').style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
-      // Update status with live cap
       document.getElementById('scan-status').textContent =
         `${G.scanIndex + 1} / ${G.scanQueue.length} · MCap: ${formatMcap(q.marketCap)} · ${G.scanQueue.length - G.scanIndex - 1} remaining`;
-    } else {
-      // Yahoo returned no data — skip silently
-      G.scanIndex++;
-      await loadNextScanStock();
-    }
+    } else { G.scanIndex++; await loadNextScanStock(); }
   } catch(e) {
     document.getElementById('scan-price').textContent = 'N/A';
     document.getElementById('scan-mcap').textContent = 'N/A';
@@ -2953,8 +2370,7 @@ async function checkAlerts() {
     if (!alerts || !alerts.length) return;
     for (const a of alerts) {
       try {
-        const json = await fetchQuote(a.symbol);
-        const q = json?.quoteResponse?.result?.[0];
+        const q = await fetchQuote(a.symbol);
         if (!q) continue;
         const price = q.regularMarketPrice || 0;
         const triggered = (a.condition === 'above' && price >= a.target_price) ||
@@ -3282,20 +2698,11 @@ function loadCustomSymbol(val) {
   document.getElementById('stock-search').value = '';
 }
 
+// ── NO-AUTH MODE ─────────────────────────────────────────────
+// App uses Supabase anon key directly. No login required.
+// Capital persisted in settings table + localStorage fallback.
+// To add Telegram bot: set token in config screen.
 
-// ── SCREEN NAVIGATION ────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const el = document.getElementById(id);
-  if (el) el.classList.add('active');
-  if (id === 'journal-screen')   renderJournal();
-  if (id === 'alerts-screen')    renderAlerts();
-  if (id === 'dismissed-screen') renderDismissed();
-}
-
-// ── TELEGRAM TOKEN SETUP (extra setting) ─────────────────────
-// Run this in browser console to set your bot token:
-// localStorage.setItem('nse_tg_token', 'YOUR_BOT_TOKEN_HERE')
 </script>
 
 </body>
