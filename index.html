@@ -450,13 +450,9 @@ body {
   #sidebar { width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; }
 }
 
-/* ── AUTH/ADMIN REMOVED ── */
-
 </style>
 </head>
 <body>
-<!-- ════ AUTH SCREEN ════ -->
-
 <div id="app">
 
 
@@ -1678,7 +1674,6 @@ const NSE_STOCKS = [
 
 
 // ── SUPABASE CLIENT (no-auth, anon key only) ─────────────────
-const LOCAL_DB = { watchlist: [], positions: [], dismissed: [] };
 let _sb = null;
 
 function initSupabase() {
@@ -1712,7 +1707,6 @@ async function sbGet(table, params = '') {
 
 async function sbPost(table, body) {
   if (!_sb) throw new Error('Supabase not initialised');
-  // No user_id — no-auth mode
   const { data, error } = await _sb.from(table).insert(body).select();
   if (error) throw new Error('sbPost ' + table + ': ' + error.message);
   return data || [];
@@ -1740,24 +1734,28 @@ async function saveCapitalToDB() {
 async function loadCapitalFromDB() {
   if (_sb) {
     try {
-      const { data } = await _sb.from('settings').select('capital,start_capital').eq('id', 'default').single();
+      const { data } = await _sb.from('settings').select('capital,start_capital').eq('id','default').single();
       if (data) { CFG.capital = data.capital ?? CFG.capital; CFG.startCapital = data.start_capital ?? CFG.startCapital; return; }
     } catch(e) {}
   }
   try { const s = JSON.parse(localStorage.getItem('nse_capital') || '{}'); if (s.capital) CFG.capital = s.capital; if (s.startCapital) CFG.startCapital = s.startCapital; } catch(e) {}
 }
 
-// ── YAHOO FINANCE PROXY ──────────────────────────────────────
+// ── YAHOO FINANCE PROXY ───────────────────────────────────────
 function getProxyUrl() {
-  // Use Supabase edge function if configured, else try direct (may fail on CORS)
   if (CFG.sbUrl) return `${CFG.sbUrl.replace(/\/$/, '')}/functions/v1/${CFG.proxyFnName || 'yahoo-proxy'}`;
-  return 'https://query1.finance.yahoo.com'; // fallback - likely to fail
+  return 'https://query1.finance.yahoo.com';
 }
 
 async function fetchChart(symbol, range = '1y', interval = '1d') {
   const proxy = getProxyUrl();
-  const url = `${proxy}?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}&action=chart`;
-  const headers = CFG.sbKey ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  let url;
+  if (CFG.sbUrl) {
+    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}&action=chart`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+  }
+  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`Chart fetch failed: ${r.status}`);
   return r.json();
@@ -1770,7 +1768,7 @@ async function fetchQuote(symbol) {
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`Quote fetch failed: ${r.status}`);
   const json = await r.json();
-  // Proxy returns v8/chart format for both quote and chart actions
+  // Proxy returns v8/chart format for quote action
   const meta = json?.chart?.result?.[0]?.meta;
   if (!meta) return null;
   const prev = meta.chartPreviousClose || meta.regularMarketPrice;
@@ -1809,7 +1807,6 @@ window.addEventListener('load', () => {
   const theme = localStorage.getItem('nse_theme');
   if (theme === 'light') document.documentElement.classList.add('light');
   updateMarketNotice();
-  // No auth — config screen shown by default
 });
 
 function loadConfig() {
@@ -2234,6 +2231,7 @@ async function loadNextScanStock() {
   document.getElementById('scan-status').textContent =
     `${G.scanIndex + 1} / ${G.scanQueue.length} · Remaining: ${G.scanQueue.length - G.scanIndex - 1}`;
 
+  // Fetch live quote
   try {
     const q = await fetchQuote(sym);
     G.scanCurrentMeta = q;
@@ -2698,12 +2696,384 @@ function loadCustomSymbol(val) {
   document.getElementById('stock-search').value = '';
 }
 
-// ── NO-AUTH MODE ─────────────────────────────────────────────
-// App uses Supabase anon key directly. No login required.
-// Capital persisted in settings table + localStorage fallback.
-// To add Telegram bot: set token in config screen.
+// ── SCREEN NAVIGATION ────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  if (id === 'journal-screen') renderJournal();
+  if (id === 'alerts-screen') renderAlerts();
+  if (id === 'dismissed-screen') renderDismissed();
+}
 
+function updateMarketNotice() {
+  const el = document.getElementById('market-notice');
+  if (!el) return;
+  try {
+    const ist = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const day = ist.getDay();
+    const t = ist.getHours() * 60 + ist.getMinutes();
+    const open = day >= 1 && day <= 5 && t >= 555 && t < 930;
+    el.textContent = open ? '🟢 Market Open · EOD data updates at close' : '🔴 Market Closed · Data as of last session';
+    el.style.background = open ? 'rgba(0,229,176,0.12)' : 'rgba(255,255,255,0.04)';
+  } catch(e) {}
+}
+
+// ── CANVAS / CHART ENGINE ────────────────────────────────────
+function initCanvases() {
+  const mCanvas = document.getElementById('main-canvas');
+  const dCanvas = document.getElementById('draw-canvas');
+  const vCanvas = document.getElementById('vol-canvas');
+  if (!mCanvas) return;
+  G.mCtx = mCanvas.getContext('2d');
+  G.dCtx = dCanvas.getContext('2d');
+  G.vCtx = vCanvas.getContext('2d');
+
+  function resize() {
+    const wrap = document.getElementById('canvas-wrap');
+    const vwrap = document.getElementById('vol-wrap');
+    if (!wrap) return;
+    const w = wrap.clientWidth, mh = wrap.clientHeight;
+    const vh = vwrap ? vwrap.clientHeight : 70;
+    [mCanvas, dCanvas].forEach(c => { c.width = w; c.height = mh; });
+    vCanvas.width = w; vCanvas.height = vh;
+    if (G.currentData) { drawAll(); drawVolume(); }
+  }
+  new ResizeObserver(resize).observe(document.getElementById('canvas-wrap'));
+  resize();
+
+  // Pan & draw state
+  let isPanning = false, panStartX = 0, panStartView = 0;
+
+  dCanvas.addEventListener('mousedown', e => {
+    const rect = dCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (G.tool) {
+      G.isDrawing = true;
+      G.drawStart = { x, y, bar: xToBar(x), price: pixelToPrice(y) };
+    } else { isPanning = true; panStartX = e.clientX; panStartView = G.viewStart; }
+  });
+
+  dCanvas.addEventListener('mousemove', e => {
+    const rect = dCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (isPanning && G.currentData) {
+      const dBars = Math.round((e.clientX - panStartX) / G.candleW);
+      const vis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
+      G.viewStart = Math.max(0, Math.min(G.currentData.closes.length - vis, panStartView - dBars));
+      drawAll(); drawVolume();
+    } else if (G.isDrawing && G.drawStart) {
+      drawAll();
+      const ctx = G.dCtx;
+      ctx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+      ctx.strokeStyle = 'rgba(255,200,0,0.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+      ctx.beginPath();
+      if (G.tool === 'hline') { ctx.moveTo(G.chartPad.l, y); ctx.lineTo(dCanvas.width - G.chartPad.r, y); }
+      else { ctx.moveTo(G.drawStart.x, G.drawStart.y); ctx.lineTo(x, y); }
+      ctx.stroke();
+      showCrosshair(x, y);
+    } else { showCrosshair(x, y); showOHLCForX(x); }
+  });
+
+  dCanvas.addEventListener('mouseup', e => {
+    const rect = dCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (isPanning) { isPanning = false; }
+    else if (G.isDrawing && G.drawStart) {
+      G.isDrawing = false;
+      G.drawings.push({ type: G.tool, bar1: G.drawStart.bar, price1: G.drawStart.price, bar2: xToBar(x), price2: pixelToPrice(y) });
+      drawAll(); G.drawStart = null;
+    }
+  });
+
+  dCanvas.addEventListener('mouseleave', () => {
+    isPanning = false; G.isDrawing = false;
+    if (G.dCtx) G.dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+  });
+
+  dCanvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (!G.currentData) return;
+    const dir = e.deltaY > 0 ? 1 : -1;
+    const vis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
+    G.candleW = Math.max(3, Math.min(32, G.candleW - dir * 1.5));
+    const newVis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
+    G.viewStart = Math.max(0, Math.min(G.currentData.closes.length - newVis, G.viewStart + Math.round((vis - newVis) / 2)));
+    drawAll(); drawVolume();
+  }, { passive: false });
+}
+
+function priceToY(price, prMin, prMax, padT, chartH) {
+  return padT + chartH - ((price - prMin) / (prMax - prMin)) * chartH;
+}
+function pixelToPrice(y) {
+  if (G._prMin === undefined) return 0;
+  return G._prMax - ((y - G.chartPad.t) / G._chartH) * (G._prMax - G._prMin);
+}
+function xToBar(x) {
+  return (G._start || 0) + Math.floor((x - G.chartPad.l) / G.candleW);
+}
+function barToX(bar) {
+  return G.chartPad.l + (bar - (G._start || 0)) * G.candleW + G.candleW / 2;
+}
+
+function drawAll() {
+  const canvas = document.getElementById('main-canvas');
+  const ctx = G.mCtx;
+  if (!ctx || !G.currentData) return;
+  const { opens, highs, lows, closes, timestamps } = G.currentData;
+  const W = canvas.width, H = canvas.height;
+  const { l: pL, r: pR, t: pT, b: pB } = G.chartPad;
+  const cW = W - pL - pR, cH = H - pT - pB;
+  const vis = Math.floor(cW / G.candleW);
+  const s = Math.max(0, G.viewStart);
+  const e = Math.min(closes.length, s + vis);
+  G._start = s; G._end = e; G._chartW = cW; G._chartH = cH;
+
+  const sl = { o: opens.slice(s,e), h: highs.slice(s,e), l: lows.slice(s,e), c: closes.slice(s,e), t: timestamps.slice(s,e) };
+  const valids = sl.l.filter(v => v != null);
+  if (!valids.length) return;
+  const minP = Math.min(...valids), maxP = Math.max(...sl.h.filter(v => v != null));
+  const pad = (maxP - minP) * 0.06 || 1;
+  const prMin = minP - pad, prMax = maxP + pad;
+  G._prMin = prMin; G._prMax = prMax;
+
+  // Clear + background
+  const isDark = !document.documentElement.classList.contains('light');
+  ctx.fillStyle = isDark ? '#0d1117' : '#f8fafc';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pT + (cH / 5) * i;
+    ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(W - pR, y); ctx.stroke();
+    const price = prMax - (prMax - prMin) * (i / 5);
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)';
+    ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText('₹' + fp(price), pL - 4, y + 3);
+  }
+
+  // Current price dashed line
+  const lastClose = closes[closes.length - 1];
+  if (lastClose) {
+    const py = priceToY(lastClose, prMin, prMax, pT, cH);
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(0,229,176,0.45)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pL, py); ctx.lineTo(W - pR, py); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#00e5b0'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('₹' + fp(lastClose), W - pR + 3, py + 3);
+  }
+
+  // Candles
+  sl.c.forEach((c, i) => {
+    if (c == null) return;
+    const o = sl.o[i], h = sl.h[i], l = sl.l[i];
+    if (o == null) return;
+    const cx = pL + i * G.candleW + G.candleW / 2;
+    const bw = Math.max(1, G.candleW * 0.7);
+    const up = c >= o;
+    const col = up ? '#26a69a' : '#ef5350';
+    const yH = priceToY(h, prMin, prMax, pT, cH);
+    const yL = priceToY(l, prMin, prMax, pT, cH);
+    const yO = priceToY(o, prMin, prMax, pT, cH);
+    const yC = priceToY(c, prMin, prMax, pT, cH);
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
+    ctx.fillRect(cx - bw / 2, Math.min(yO, yC), bw, Math.max(1, Math.abs(yC - yO)));
+  });
+
+  // X-axis dates
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)';
+  ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(40 / G.candleW));
+  sl.t.forEach((ts, i) => {
+    if (i % step !== 0) return;
+    const xp = pL + i * G.candleW + G.candleW / 2;
+    const d = new Date(ts * 1000);
+    const lbl = G.currentTF === 'D' ? `${d.getDate()}/${d.getMonth()+1}` : `${d.getMonth()+1}/${String(d.getFullYear()).slice(2)}`;
+    ctx.fillText(lbl, xp, H - pB + 14);
+  });
+
+  // EMAs
+  const emaColors = { 9: '#ff9800', 21: '#2196f3', 50: '#9c27b0', 200: '#f44336' };
+  Object.entries(G.emas).forEach(([period, on]) => {
+    if (!on) return;
+    drawEMA(parseInt(period), emaColors[period], closes, s, e, pL, pT, cH, prMin, prMax);
+  });
+
+  // Drawings (on draw canvas)
+  drawDrawings(pL, pT, cH, prMin, prMax, s, e);
+}
+
+function drawEMA(period, color, closes, start, end, pL, pT, cH, prMin, prMax) {
+  if (closes.length < period) return;
+  const k = 2 / (period + 1);
+  let ema = closes.slice(0, period).reduce((a, b) => a + (b || 0), 0) / period;
+  const vals = new Array(period - 1).fill(null);
+  for (let i = period - 1; i < closes.length; i++) {
+    ema = (closes[i] || ema) * k + ema * (1 - k);
+    vals.push(ema);
+  }
+  const ctx = G.mCtx;
+  ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.setLineDash([]);
+  ctx.beginPath(); let started = false;
+  for (let i = start; i < end; i++) {
+    if (!vals[i]) continue;
+    const xp = pL + (i - start) * G.candleW + G.candleW / 2;
+    const yp = priceToY(vals[i], prMin, prMax, pT, cH);
+    if (!started) { ctx.moveTo(xp, yp); started = true; } else ctx.lineTo(xp, yp);
+  }
+  ctx.stroke();
+}
+
+function drawVolume() {
+  const canvas = document.getElementById('vol-canvas');
+  const ctx = G.vCtx;
+  if (!ctx || !G.currentData) return;
+  const { volumes, closes, opens } = G.currentData;
+  const W = canvas.width, H = canvas.height;
+  const s = G._start || 0, e = G._end || closes.length;
+  ctx.clearRect(0, 0, W, H);
+  const slVol = volumes.slice(s, e);
+  const maxV = Math.max(...slVol.filter(v => v != null), 1);
+  for (let i = s; i < e; i++) {
+    const v = volumes[i]; if (v == null) continue;
+    const up = closes[i] >= opens[i];
+    const bh = (v / maxV) * (H - 4);
+    const xp = G.chartPad.l + (i - s) * G.candleW;
+    const bw = Math.max(1, G.candleW * 0.7);
+    ctx.fillStyle = up ? 'rgba(38,166,154,0.4)' : 'rgba(239,83,80,0.4)';
+    ctx.fillRect(xp + (G.candleW - bw) / 2, H - bh, bw, bh);
+  }
+}
+
+function drawDrawings(pL, pT, cH, prMin, prMax, start, end) {
+  const canvas = document.getElementById('draw-canvas');
+  const ctx = G.dCtx;
+  if (!ctx || G.isDrawing) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  G.drawings.forEach(d => {
+    const x1 = barToX(d.bar1), y1 = priceToY(d.price1, prMin, prMax, pT, cH);
+    const x2 = barToX(d.bar2), y2 = d.type === 'hline' ? y1 : priceToY(d.price2, prMin, prMax, pT, cH);
+    ctx.strokeStyle = 'rgba(255,200,0,0.85)';
+    ctx.beginPath();
+    if (d.type === 'hline') { ctx.moveTo(pL, y1); ctx.lineTo(canvas.width - G.chartPad.r, y1); }
+    else if (d.type === 'ray') {
+      const dx = x2 - x1, dy = y2 - y1, t2 = (canvas.width - G.chartPad.r - x1) / (dx || 0.001);
+      ctx.moveTo(x1, y1); ctx.lineTo(x1 + dx * t2, y1 + dy * t2);
+    } else { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,200,0,0.8)'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('₹' + fp(d.price1), canvas.width - G.chartPad.r + 2, y1 + 3);
+  });
+}
+
+function showCrosshair(x, y) {
+  const canvas = document.getElementById('draw-canvas');
+  const ctx = G.dCtx;
+  if (!ctx) return;
+  if (!G.isDrawing) drawDrawings(G.chartPad.l, G.chartPad.t, G._chartH, G._prMin, G._prMax, G._start, G._end);
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(x, G.chartPad.t); ctx.lineTo(x, canvas.height - G.chartPad.b);
+  ctx.moveTo(G.chartPad.l, y); ctx.lineTo(canvas.width - G.chartPad.r, y);
+  ctx.stroke(); ctx.setLineDash([]);
+  if (G._prMax !== undefined) {
+    const price = pixelToPrice(y);
+    ctx.fillStyle = 'rgba(30,35,50,0.9)';
+    ctx.fillRect(canvas.width - G.chartPad.r + 1, y - 7, G.chartPad.r - 2, 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('₹' + fp(price), canvas.width - G.chartPad.r + 3, y + 3);
+  }
+}
+
+function showOHLCForX(x) {
+  if (!G.currentData || G._start === undefined) return;
+  const bar = xToBar(x);
+  if (bar < 0 || bar >= G.currentData.closes.length) return;
+  const { opens, highs, lows, closes, volumes } = G.currentData;
+  document.getElementById('oi-o').textContent = '₹' + fp(opens[bar]);
+  document.getElementById('oi-h').textContent = '₹' + fp(highs[bar]);
+  document.getElementById('oi-l').textContent = '₹' + fp(lows[bar]);
+  document.getElementById('oi-c').textContent = '₹' + fp(closes[bar]);
+  document.getElementById('oi-v').textContent = fv(volumes[bar] || 0);
+}
+
+// ── CHART CONTROLS ────────────────────────────────────────────
+async function loadStock(symbol) {
+  if (!symbol) return;
+  G.currentSymbol = symbol; G.drawings = [];
+  document.getElementById('scrip-sym').textContent = symbol.replace('.NS', '');
+  document.getElementById('scrip-fullname').textContent = '...';
+  document.getElementById('price-badge').textContent = '—';
+  showLoading(true, 'Loading ' + symbol.replace('.NS', '') + '...', 'Fetching chart data');
+  await loadActivePosition(symbol);
+  updateTradePanel();
+  try {
+    const tfMap = { D: ['1y','1d'], W: ['5y','1wk'], M: ['10y','1mo'] };
+    const [range, interval] = tfMap[G.currentTF] || ['1y','1d'];
+    const json = await fetchChart(symbol, range, interval);
+    const data = parseChartData(json);
+    G.currentData = data; G.currentMeta = data.meta;
+    const vis = Math.floor(120);
+    G.viewStart = Math.max(0, data.closes.length - vis);
+    G.candleW = 9;
+    const name = data.meta.longName || data.meta.shortName || symbol.replace('.NS','');
+    const price = data.meta.regularMarketPrice || data.closes[data.closes.length - 1] || 0;
+    const prev = data.meta.chartPreviousClose || data.closes[data.closes.length - 2] || price;
+    const chgPct = prev ? ((price - prev) / prev * 100) : 0;
+    document.getElementById('scrip-fullname').textContent = name;
+    document.getElementById('price-badge').textContent = '₹' + fp(price);
+    const chgEl = document.getElementById('chg-badge');
+    chgEl.textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+    chgEl.style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('oi-52').textContent = '₹' + fp(data.meta.fiftyTwoWeekLow) + '–₹' + fp(data.meta.fiftyTwoWeekHigh);
+    document.getElementById('oi-mcap').textContent = formatMcap(data.meta.marketCap);
+    document.getElementById('rc-entry').textContent = '₹' + fp(price);
+    showLoading(false); drawAll(); drawVolume();
+  } catch(e) {
+    showLoading(false);
+    showNotif('error', 'Chart Error', e.message || 'Failed to load ' + symbol);
+    document.getElementById('scrip-fullname').textContent = 'Error loading data';
+  }
+}
+
+async function refreshChart() { if (G.currentSymbol) await loadStock(G.currentSymbol); }
+
+function switchTF(tf) {
+  G.currentTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tf-' + tf)?.classList.add('active');
+  if (G.currentSymbol) loadStock(G.currentSymbol);
+}
+
+function toggleEMA(period) {
+  G.emas[period] = !G.emas[period];
+  document.getElementById('em' + period)?.classList.toggle('on', G.emas[period]);
+  if (G.mCtx && G.currentData) drawAll();
+}
+
+function setTool(tool) {
+  G.tool = G.tool === tool ? null : tool;
+  document.querySelectorAll('.draw-btn[id^="tool-"]').forEach(b => b.classList.remove('active'));
+  if (G.tool) document.getElementById('tool-' + tool)?.classList.add('active');
+  const dc = document.getElementById('draw-canvas');
+  if (dc) dc.style.cursor = G.tool ? 'crosshair' : 'default';
+}
+
+function clearDrawings() {
+  G.drawings = [];
+  const dc = document.getElementById('draw-canvas');
+  if (dc && G.dCtx) G.dCtx.clearRect(0, 0, dc.width, dc.height);
+}
+
+// ── NO-AUTH MODE ─────────────────────────────────────────────
+// App uses Supabase anon key. No login required.
 </script>
 
+</script>
 </body>
 </html>
