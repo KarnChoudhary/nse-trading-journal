@@ -32,22 +32,22 @@
   --font2: 'Segoe UI', system-ui, sans-serif;
 }
 :root.light {
-  --bg: #f2f6fa;
+  --bg: #edf2f7;
   --panel: #ffffff;
-  --card: #e8f0f8;
-  --border: #ccd9e8;
-  --border2: #b8ccde;
-  --accent: #00a882;
-  --accent-dim: rgba(0,168,130,0.1);
-  --accent2: #d97706;
-  --red: #e02020;
-  --green: #0a9e72;
-  --blue: #1a6fd4;
-  --text: #0f1e2e;
-  --text2: #4a6075;
-  --text3: #8ca0b8;
-  --chart-bg: #f8fbff;
-  --grid: #e2eaf4;
+  --card: #dce8f4;
+  --border: #b8cfe0;
+  --border2: #a0bbcf;
+  --accent: #00916e;
+  --accent-dim: rgba(0,145,110,0.12);
+  --accent2: #c05c00;
+  --red: #c0392b;
+  --green: #0a8a62;
+  --blue: #1558b0;
+  --text: #0a1520;
+  --text2: #2d4a60;
+  --text3: #5a7a90;
+  --chart-bg: #f4f8fc;
+  --grid: #d0dce8;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -656,31 +656,33 @@ body {
       </div>
     </div>
     <div class="chart-controls">
-      <button class="tf-btn active" id="tf-D" onclick="switchTF('D')">D</button>
-      <button class="tf-btn" id="tf-W" onclick="switchTF('W')">W</button>
-      <button class="tf-btn" id="tf-M" onclick="switchTF('M')">M</button>
+      <button class="tf-btn active" id="tf-D" onclick="switchTF('D')" title="Daily candles">D</button>
+      <button class="tf-btn" id="tf-W" onclick="switchTF('W')" title="Weekly candles">W</button>
+      <button class="tf-btn" id="tf-M" onclick="switchTF('M')" title="Monthly candles">M</button>
       <div class="ctrl-sep"></div>
-      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">EMA9</button>
-      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">EMA21</button>
-      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">EMA50</button>
-      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">EMA200</button>
+      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)" title="EMA 9 — orange">EMA9</button>
+      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)" title="EMA 21 — blue">EMA21</button>
+      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)" title="EMA 50 — red">EMA50</button>
+      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)" title="EMA 200 — purple">EMA200</button>
       <div class="ctrl-sep"></div>
-      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏</button>
-      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">—</button>
-      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶</button>
-      <button class="draw-btn" onclick="clearDrawings()">🗑</button>
+      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')" title="Trend line — click &amp; drag">📏</button>
+      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')" title="Horizontal line — click to draw">—</button>
+      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')" title="Ray — extends right">⟶</button>
+      <button class="draw-btn" onclick="clearDrawings()" title="Clear all drawings">🗑</button>
       <div class="ctrl-sep"></div>
-      <button class="draw-btn" id="ct-candles" onclick="setChartType('candles')" title="Candles" style="font-size:11px;padding:2px 5px">🕯</button>
-      <button class="draw-btn" id="ct-hollow" onclick="setChartType('hollow')" title="Hollow Candles" style="font-size:11px;padding:2px 5px">◻</button>
-      <button class="draw-btn" id="ct-bars" onclick="setChartType('bars')" title="OHLC Bars" style="font-size:11px;padding:2px 5px">┤</button>
-      <button class="draw-btn" id="ct-line" onclick="setChartType('line')" title="Line" style="font-size:11px;padding:2px 5px">📈</button>
+      <button class="draw-btn" id="ct-candles" onclick="setChartType('candles')" title="Solid candles" style="font-size:11px;padding:2px 5px">🕯</button>
+      <button class="draw-btn" id="ct-hollow" onclick="setChartType('hollow')" title="Hollow candles — up=outline, down=filled" style="font-size:11px;padding:2px 5px">◻</button>
+      <button class="draw-btn" id="ct-bars" onclick="setChartType('bars')" title="OHLC bar chart" style="font-size:11px;padding:2px 5px">┤</button>
+      <button class="draw-btn" id="ct-line" onclick="setChartType('line')" title="Line chart" style="font-size:11px;padding:2px 5px">📈</button>
       <div class="ctrl-sep"></div>
-      <label title="Bull candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▲<input type="color" id="bull-color" value="#26a69a" onchange="setCandleColor('bull',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
-      <label title="Bear candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▼<input type="color" id="bear-color" value="#ef5350" onchange="setCandleColor('bear',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
+      <button class="draw-btn" id="log-btn" onclick="toggleLogScale()" title="Toggle Log / Linear price scale" style="font-size:10px;padding:2px 6px;font-weight:700;color:var(--accent);border-color:var(--accent)">LOG</button>
+      <button class="draw-btn" id="alert-xhair-btn" onclick="setAlertAtCrosshair()" title="Set alert at crosshair price — hover chart first" style="font-size:10px;padding:2px 6px">🔔+</button>
+      <label title="Bull (up) candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▲<input type="color" id="bull-color" value="#26a69a" onchange="setCandleColor('bull',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
+      <label title="Bear (down) candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▼<input type="color" id="bear-color" value="#ef5350" onchange="setCandleColor('bear',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
       <div class="ctrl-right">
-        <button class="btn btn-xs btn-secondary" onclick="refreshChart()" title="Refresh">↻</button>
-        <button class="btn btn-xs btn-secondary" id="chart-theme-btn" onclick="toggleChartTheme()" title="Chart theme">🌙</button>
-        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()" title="App theme">◐</button>
+        <button class="btn btn-xs btn-secondary" onclick="refreshChart()" title="Refresh chart data">↻</button>
+        <button class="btn btn-xs btn-secondary" id="chart-theme-btn" onclick="toggleChartTheme()" title="Chart background: dark/light (independent of app theme)">🌙</button>
+        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()" title="App theme: dark/light">◐</button>
       </div>
     </div>
     <div class="ohlc-bar">
@@ -1689,6 +1691,7 @@ const NSE_STOCKS = [
 
 
 // ── SUPABASE CLIENT (no-auth, anon key only) ─────────────────
+const LOCAL_DB = { watchlist: [], positions: [], dismissed: [] };
 let _sb = null;
 
 function initSupabase() {
@@ -1986,19 +1989,27 @@ async function loadActivePosition(symbol) {
 
 function renderPositions() {
   const el = document.getElementById('positions-list');
+  if (!el) return;
   const open = _positionsCache.filter(p => p.status === 'open');
+  const tabEl = document.getElementById('tab-positions');
+  if (tabEl) tabEl.textContent = open.length ? 'Positions (' + open.length + ')' : 'Positions';
   if (!open.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No open positions.</div></div>';
     return;
   }
   el.innerHTML = open.map(pos => {
-    const lastClose = G.currentSymbol === pos.symbol ? (G.currentData?.closes?.at(-1) || pos.entry_price) : pos.entry_price;
-    const pnl = (lastClose - pos.entry_price) * pos.quantity * (pos.direction === 'BUY' ? 1 : -1);
-    const pnlPct = (pnl / pos.allocated_capital * 100).toFixed(1);
-    return `<div class="pos-item" onclick="loadStock('${pos.symbol}')">
+    const lastClose = (G.currentSymbol === pos.symbol && G.currentData)
+      ? (G.currentData.closes.filter(c => c != null).at(-1) || pos.entry_price)
+      : (pos.current_price || pos.entry_price);
+    const mult = pos.direction === 'BUY' ? 1 : -1;
+    const pnl = (lastClose - pos.entry_price) * pos.quantity * mult;
+    const pnlPct = pos.allocated_capital ? (pnl / pos.allocated_capital * 100).toFixed(1) : '0.0';
+    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const isActive = G.currentSymbol === pos.symbol;
+    return `<div class="pos-item${isActive ? ' active-wl' : ''}" onclick="loadStock('${pos.symbol}')">
       <div class="pos-header">
         <span class="pos-sym">${pos.symbol.replace('.NS','')}</span>
-        <span class="pos-pnl" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}</span>
+        <span class="pos-pnl" style="color:${pnlColor}">${pnl >= 0 ? '+' : ''}₹${fn(pnl.toFixed(0))}</span>
       </div>
       <div class="pos-detail">
         <span class="dir-pill ${pos.direction === 'BUY' ? 'd-buy' : 'd-sell'}">${pos.direction}</span>
@@ -2140,6 +2151,7 @@ async function enterTrade(direction) {
     updateTradePanel();
     renderWatchlist();
     renderPositions();
+    switchSbTab('positions'); // auto-switch to positions tab
     drawAll();
     toast(`✅ ${direction} ${qty} shares of ${G.currentSymbol.replace('.NS','')} @ ₹${fp(lastClose)}`);
     await sendTelegramAlert(`📈 New ${direction} Trade\n${G.currentSymbol.replace('.NS','')} — ${G.currentMeta?.name || ''}\nEntry: ₹${fp(lastClose)} | SL: ₹${fp(sl)} | Qty: ${qty}\nRisk: ₹${fn((slDist*qty).toFixed(0))} | Alloc: ₹${fn(allocAmt.toFixed(0))}`);
@@ -2851,11 +2863,19 @@ function initCanvases() {
   dCanvas.addEventListener('wheel', e => {
     e.preventDefault();
     if (!G.currentData) return;
+    const rect = dCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    // Which bar is under the mouse?
+    const barUnderMouse = xToBar(mouseX);
     const dir = e.deltaY > 0 ? 1 : -1;
-    const vis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
-    G.candleW = Math.max(3, Math.min(32, G.candleW - dir * 1.5));
-    const newVis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
-    G.viewStart = Math.max(0, Math.min(G.currentData.closes.length - newVis, G.viewStart + Math.round((vis - newVis) / 2)));
+    const oldCandleW = G.candleW;
+    G.candleW = Math.max(3, Math.min(40, G.candleW * (dir > 0 ? 0.85 : 1.18)));
+    // Keep the bar under mouse at the same screen position
+    const newBarsFromLeft = (mouseX - G.chartPad.l) / G.candleW;
+    G.viewStart = Math.max(0, Math.min(
+      G.currentData.closes.length - 1,
+      Math.round(barUnderMouse - newBarsFromLeft)
+    ));
     drawAll(); drawVolume();
   }, { passive: false });
 }
@@ -3028,6 +3048,40 @@ function drawAll() {
     if (!on) return;
     drawEMA(parseInt(period), emaColors[period], closes, s, e, pL, pT, cH, prMin, prMax);
   });
+
+  // ── Entry / SL lines for open position ──
+  if (G.openPosition) {
+    const ep = G.openPosition.entry_price;
+    const sl = G.openPosition.trail_sl || G.openPosition.stop_loss;
+    const isBuy = G.openPosition.direction === 'BUY';
+    const epy = priceToY(ep, prMin, prMax, pT, cH);
+    const sly = priceToY(sl, prMin, prMax, pT, cH);
+
+    // Entry line — green dashed
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = 'rgba(0,229,176,0.8)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(pL, epy); ctx.lineTo(W - pR, epy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(0,229,176,0.9)'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillRect(W - pR + 1, epy - 8, G.chartPad.r - 2, 16);
+    ctx.fillStyle = '#000';
+    ctx.fillText('ENTRY ₹' + fp(ep), W - pR + 3, epy + 3);
+
+    // SL line — red dashed
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(239,83,80,0.8)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(pL, sly); ctx.lineTo(W - pR, sly); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(239,83,80,0.9)'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillRect(W - pR + 1, sly - 8, G.chartPad.r - 2, 16);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('SL ₹' + fp(sl), W - pR + 3, sly + 3);
+
+    // Label on left side too
+    ctx.font = 'bold 9px monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(0,229,176,0.85)';
+    ctx.fillText('▶ ENTRY', pL - 2, epy + 3);
+    ctx.fillStyle = 'rgba(239,83,80,0.85)';
+    ctx.fillText('▶ SL', pL - 2, sly + 3);
+  }
 
   drawDrawings(pL, pT, cH, prMin, prMax, s, e);
 }
