@@ -215,14 +215,14 @@ body {
   font-size: 10px; font-weight: 700; font-family: var(--font); background: transparent;
   transition: all .12s;
 }
-.e9 { border-color: #f0a500; color: #f0a500; }
-.e9.on { background: rgba(240,165,0,.15); }
-.e21 { border-color: #3d9eff; color: #3d9eff; }
-.e21.on { background: rgba(61,158,255,.15); }
-.e50 { border-color: #ff4560; color: #ff4560; }
-.e50.on { background: rgba(255,69,96,.15); }
-.e200 { border-color: #8b5cf6; color: #8b5cf6; }
-.e200.on { background: rgba(139,92,246,.15); }
+.e9  { border-color: #ff9800; color: #ff9800; }
+.e9.on  { background: rgba(255,152,0,.15); }
+.e21 { border-color: #2196f3; color: #2196f3; }
+.e21.on { background: rgba(33,150,243,.15); }
+.e50 { border-color: #f44336; color: #f44336; }
+.e50.on { background: rgba(244,67,54,.15); }
+.e200{ border-color: #9c27b0; color: #9c27b0; }
+.e200.on{ background: rgba(156,39,176,.15); }
 .draw-btn {
   padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2);
   background: transparent; color: var(--text2); cursor: pointer; font-size: 11px;
@@ -659,18 +659,27 @@ body {
       <button class="tf-btn" id="tf-W" onclick="switchTF('W')">W</button>
       <button class="tf-btn" id="tf-M" onclick="switchTF('M')">M</button>
       <div class="ctrl-sep"></div>
-      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">9</button>
-      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">21</button>
-      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">50</button>
-      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">200</button>
+      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">EMA9</button>
+      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">EMA21</button>
+      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">EMA50</button>
+      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">EMA200</button>
       <div class="ctrl-sep"></div>
-      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏 Trend</button>
-      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">— H-Line</button>
-      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶ Ray</button>
+      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏</button>
+      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">—</button>
+      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶</button>
       <button class="draw-btn" onclick="clearDrawings()">🗑</button>
+      <div class="ctrl-sep"></div>
+      <button class="draw-btn" id="ct-candles" onclick="setChartType('candles')" title="Candles" style="font-size:11px;padding:2px 5px">🕯</button>
+      <button class="draw-btn" id="ct-hollow" onclick="setChartType('hollow')" title="Hollow Candles" style="font-size:11px;padding:2px 5px">◻</button>
+      <button class="draw-btn" id="ct-bars" onclick="setChartType('bars')" title="OHLC Bars" style="font-size:11px;padding:2px 5px">┤</button>
+      <button class="draw-btn" id="ct-line" onclick="setChartType('line')" title="Line" style="font-size:11px;padding:2px 5px">📈</button>
+      <div class="ctrl-sep"></div>
+      <label title="Bull candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▲<input type="color" id="bull-color" value="#26a69a" onchange="setCandleColor('bull',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
+      <label title="Bear candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▼<input type="color" id="bear-color" value="#ef5350" onchange="setCandleColor('bear',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
       <div class="ctrl-right">
-        <button class="btn btn-xs btn-secondary" onclick="refreshChart()">↻</button>
-        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()">◐</button>
+        <button class="btn btn-xs btn-secondary" onclick="refreshChart()" title="Refresh">↻</button>
+        <button class="btn btn-xs btn-secondary" id="chart-theme-btn" onclick="toggleChartTheme()" title="Chart theme">🌙</button>
+        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()" title="App theme">◐</button>
       </div>
     </div>
     <div class="ohlc-bar">
@@ -935,6 +944,10 @@ const G = {
   viewStart: 0,
   candleW: 9,
   chartPad: { l: 60, r: 70, t: 20, b: 30 },
+  chartType: 'candles',   // candles | hollow | bars | line
+  bullColor: '#26a69a',
+  bearColor: '#ef5350',
+  chartDark: true,        // independent chart theme
   wlFilter: 'all',
   jFilter: 'all',
   scanQueue: [],
@@ -1859,6 +1872,12 @@ async function startApp() {
   checkAlerts();
   showLoading(false);
   document.getElementById('sb-username').textContent = CFG.traderName || 'Trader';
+  // Restore chart preferences
+  const ct = localStorage.getItem('nse_chart_type'); if (ct) G.chartType = ct;
+  const bc = localStorage.getItem('nse_bull_color'); if (bc) { G.bullColor = bc; const el = document.getElementById('bull-color'); if (el) el.value = bc; }
+  const rc = localStorage.getItem('nse_bear_color'); if (rc) { G.bearColor = rc; const el = document.getElementById('bear-color'); if (el) el.value = rc; }
+  const cd = localStorage.getItem('nse_chart_dark'); if (cd !== null) G.chartDark = cd === '1';
+  const cdbtn = document.getElementById('chart-theme-btn'); if (cdbtn) cdbtn.textContent = G.chartDark ? '🌙' : '☀️';
   const firstWL = _watchlistCache.find(w => w.status === 'watching' || w.status === 'in_trade');
   if (firstWL) loadStock(firstWL.symbol);
 }
@@ -2614,10 +2633,11 @@ function onSearchInput(val) {
   _searchIdx = -1;
 
   if (!_searchResults.length) {
-    // Allow manual symbol entry — show "Load custom symbol" option
+    // Allow manual symbol entry
+    const nseSym = val.endsWith('.NS') ? val : val + '.NS';
     drop.innerHTML = `<div class="s-drop-item" onmousedown="loadCustomSymbol('${val}')">
       <span class="s-sym">${val}</span>
-      <span class="s-name">Custom symbol — load from Yahoo Finance</span>
+      <span class="s-name">Load <b>${nseSym}</b> from Yahoo Finance (press Enter)</span>
     </div>`;
     drop.style.display = 'block'; return;
   }
@@ -2683,17 +2703,18 @@ function loadSearched() {
   const val = document.getElementById('stock-search').value.trim().toUpperCase();
   if (!val) return;
   document.getElementById('search-dropdown').style.display = 'none';
-  // Check if it's already a .NS symbol
+  document.getElementById('stock-search').value = '';
+  // Always append .NS for NSE stocks
   const sym = val.endsWith('.NS') ? val : val + '.NS';
   loadStock(sym);
-  document.getElementById('stock-search').value = '';
 }
 
 function loadCustomSymbol(val) {
   document.getElementById('search-dropdown').style.display = 'none';
-  const sym = val.endsWith('.NS') ? val : val + '.NS';
-  loadStock(sym);
   document.getElementById('stock-search').value = '';
+  const sym = val.toUpperCase();
+  const fullSym = sym.endsWith('.NS') ? sym : sym + '.NS';
+  loadStock(fullSym);
 }
 
 // ── SCREEN NAVIGATION ────────────────────────────────────────
@@ -2838,24 +2859,26 @@ function drawAll() {
   const prMin = minP - pad, prMax = maxP + pad;
   G._prMin = prMin; G._prMax = prMax;
 
-  // Clear + background
-  const isDark = !document.documentElement.classList.contains('light');
-  ctx.fillStyle = isDark ? '#0d1117' : '#f8fafc';
+  // ── Chart background (independent theme) ──
+  const isDark = G.chartDark;
+  const bg      = isDark ? '#0d1117' : '#ffffff';
+  const gridCol = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+  const lblCol  = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.45)';
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Grid
-  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
-  ctx.lineWidth = 1;
+  // ── Grid lines ──
+  ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
   for (let i = 0; i <= 5; i++) {
     const y = pT + (cH / 5) * i;
     ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(W - pR, y); ctx.stroke();
     const price = prMax - (prMax - prMin) * (i / 5);
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)';
+    ctx.fillStyle = lblCol;
     ctx.font = '10px monospace'; ctx.textAlign = 'right';
     ctx.fillText('₹' + fp(price), pL - 4, y + 3);
   }
 
-  // Current price dashed line
+  // ── Current price dashed line ──
   const lastClose = closes[closes.length - 1];
   if (lastClose) {
     const py = priceToY(lastClose, prMin, prMax, pT, cH);
@@ -2866,44 +2889,110 @@ function drawAll() {
     ctx.fillText('₹' + fp(lastClose), W - pR + 3, py + 3);
   }
 
-  // Candles
-  sl.c.forEach((c, i) => {
-    if (c == null) return;
-    const o = sl.o[i], h = sl.h[i], l = sl.l[i];
-    if (o == null) return;
-    const cx = pL + i * G.candleW + G.candleW / 2;
-    const bw = Math.max(1, G.candleW * 0.7);
-    const up = c >= o;
-    const col = up ? '#26a69a' : '#ef5350';
-    const yH = priceToY(h, prMin, prMax, pT, cH);
-    const yL = priceToY(l, prMin, prMax, pT, cH);
-    const yO = priceToY(o, prMin, prMax, pT, cH);
-    const yC = priceToY(c, prMin, prMax, pT, cH);
-    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
-    ctx.fillRect(cx - bw / 2, Math.min(yO, yC), bw, Math.max(1, Math.abs(yC - yO)));
-  });
+  // ── Draw candles/bars/line ──
+  const bull = G.bullColor || '#26a69a';
+  const bear = G.bearColor || '#ef5350';
+  const type = G.chartType || 'candles';
 
-  // X-axis dates
-  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)';
+  if (type === 'line') {
+    ctx.strokeStyle = bull; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+    ctx.beginPath(); let lStarted = false;
+    sl.c.forEach((c, i) => {
+      if (c == null) return;
+      const cx = pL + i * G.candleW + G.candleW / 2;
+      const yC = priceToY(c, prMin, prMax, pT, cH);
+      if (!lStarted) { ctx.moveTo(cx, yC); lStarted = true; } else ctx.lineTo(cx, yC);
+    });
+    ctx.stroke();
+  } else {
+    sl.c.forEach((c, i) => {
+      if (c == null) return;
+      const o = sl.o[i], h = sl.h[i], l = sl.l[i];
+      if (o == null) return;
+      const cx = pL + i * G.candleW + G.candleW / 2;
+      const bw = Math.max(1, G.candleW * 0.7);
+      const up = c >= o;
+      const col = up ? bull : bear;
+      const yH = priceToY(h, prMin, prMax, pT, cH);
+      const yL = priceToY(l, prMin, prMax, pT, cH);
+      const yO = priceToY(o, prMin, prMax, pT, cH);
+      const yC = priceToY(c, prMin, prMax, pT, cH);
+
+      if (type === 'bars') {
+        // OHLC bar chart
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - bw * 0.4, yO); ctx.lineTo(cx, yO); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, yC); ctx.lineTo(cx + bw * 0.4, yC); ctx.stroke();
+      } else {
+        // Candles (filled) or Hollow candles
+        ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
+        const bodyH = Math.max(1, Math.abs(yC - yO));
+        const bodyY = Math.min(yO, yC);
+        if (type === 'hollow') {
+          // Hollow: outline for up candles, filled for down
+          if (up) {
+            ctx.strokeStyle = col; ctx.lineWidth = 1.2;
+            ctx.strokeRect(cx - bw / 2, bodyY, bw, bodyH);
+          } else {
+            ctx.fillStyle = col;
+            ctx.fillRect(cx - bw / 2, bodyY, bw, bodyH);
+          }
+        } else {
+          // Solid candles
+          ctx.fillStyle = col;
+          ctx.fillRect(cx - bw / 2, bodyY, bw, bodyH);
+        }
+      }
+    });
+  }
+
+  // ── X-axis timeline ──
+  ctx.fillStyle = lblCol;
   ctx.font = '9px monospace'; ctx.textAlign = 'center';
-  const step = Math.max(1, Math.floor(40 / G.candleW));
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const minBarPx = G.currentTF === 'D' ? 38 : 52;
+  const step = Math.max(1, Math.ceil(minBarPx / G.candleW));
+  let lastYear = -1, lastMonth = -1;
+
   sl.t.forEach((ts, i) => {
-    if (i % step !== 0) return;
+    if (i % step !== 0 && i !== 0) return;
     const xp = pL + i * G.candleW + G.candleW / 2;
     const d = new Date(ts * 1000);
-    const lbl = G.currentTF === 'D' ? `${d.getDate()}/${d.getMonth()+1}` : `${d.getMonth()+1}/${String(d.getFullYear()).slice(2)}`;
-    ctx.fillText(lbl, xp, H - pB + 14);
+    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
+    let line1 = '', line2 = '';
+
+    if (G.currentTF === 'D') {
+      line1 = String(day).padStart(2,'0');
+      if (mo !== lastMonth || yr !== lastYear) {
+        line2 = MONTHS[mo] + (yr !== lastYear ? ` '${String(yr).slice(2)}` : '');
+        lastMonth = mo; lastYear = yr;
+      }
+    } else if (G.currentTF === 'W') {
+      line1 = `${String(day).padStart(2,'0')} ${MONTHS[mo]}`;
+      if (yr !== lastYear) { line2 = String(yr); lastYear = yr; }
+    } else {
+      line1 = MONTHS[mo];
+      line2 = String(yr);
+      lastYear = yr;
+    }
+
+    ctx.fillStyle = lblCol;
+    ctx.fillText(line1, xp, H - pB + 13);
+    if (line2) {
+      ctx.fillStyle = isDark ? 'rgba(0,229,176,0.7)' : 'rgba(0,150,100,0.8)';
+      ctx.fillText(line2, xp, H - pB + 23);
+    }
   });
 
-  // EMAs
-  const emaColors = { 9: '#ff9800', 21: '#2196f3', 50: '#9c27b0', 200: '#f44336' };
+  // ── EMAs — fixed colors: 9=orange, 21=blue, 50=red, 200=purple ──
+  const emaColors = { 9: '#ff9800', 21: '#2196f3', 50: '#f44336', 200: '#9c27b0' };
   Object.entries(G.emas).forEach(([period, on]) => {
     if (!on) return;
     drawEMA(parseInt(period), emaColors[period], closes, s, e, pL, pT, cH, prMin, prMax);
   });
 
-  // Drawings (on draw canvas)
   drawDrawings(pL, pT, cH, prMin, prMax, s, e);
 }
 
@@ -2935,17 +3024,50 @@ function drawVolume() {
   const { volumes, closes, opens } = G.currentData;
   const W = canvas.width, H = canvas.height;
   const s = G._start || 0, e = G._end || closes.length;
+  const isDark = G.chartDark;
   ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = isDark ? '#0d1117' : '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
   const slVol = volumes.slice(s, e);
   const maxV = Math.max(...slVol.filter(v => v != null), 1);
+
+  // Volume bars
   for (let i = s; i < e; i++) {
     const v = volumes[i]; if (v == null) continue;
     const up = closes[i] >= opens[i];
-    const bh = (v / maxV) * (H - 4);
+    const bh = (v / maxV) * (H - 8);
     const xp = G.chartPad.l + (i - s) * G.candleW;
     const bw = Math.max(1, G.candleW * 0.7);
-    ctx.fillStyle = up ? 'rgba(38,166,154,0.4)' : 'rgba(239,83,80,0.4)';
+    ctx.fillStyle = up
+      ? (G.bullColor ? G.bullColor + '66' : 'rgba(38,166,154,0.4)')
+      : (G.bearColor ? G.bearColor + '66' : 'rgba(239,83,80,0.4)');
     ctx.fillRect(xp + (G.candleW - bw) / 2, H - bh, bw, bh);
+  }
+
+  // 20-period Volume SMA line
+  const smaPeriod = 20;
+  if (volumes.length >= smaPeriod) {
+    ctx.strokeStyle = isDark ? 'rgba(255,200,50,0.85)' : 'rgba(200,120,0,0.85)';
+    ctx.lineWidth = 1.5; ctx.setLineDash([]);
+    ctx.beginPath(); let smaStarted = false;
+    for (let i = s; i < e; i++) {
+      if (i < smaPeriod - 1) continue;
+      const slice = volumes.slice(i - smaPeriod + 1, i + 1).filter(v => v != null);
+      if (!slice.length) continue;
+      const avg = slice.reduce((a, b) => a + b, 0) / slice.length;
+      const xp = G.chartPad.l + (i - s) * G.candleW + G.candleW / 2;
+      const yp = H - (avg / maxV) * (H - 8);
+      if (!smaStarted) { ctx.moveTo(xp, yp); smaStarted = true; } else ctx.lineTo(xp, yp);
+    }
+    ctx.stroke();
+
+    // Vol SMA label
+    ctx.fillStyle = isDark ? 'rgba(255,200,50,0.7)' : 'rgba(200,120,0,0.7)';
+    ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('VOL SMA20', G.chartPad.l + 2, 10);
   }
 }
 
@@ -3033,11 +3155,23 @@ async function loadStock(symbol) {
     document.getElementById('oi-52').textContent = '₹' + fp(data.meta.fiftyTwoWeekLow) + '–₹' + fp(data.meta.fiftyTwoWeekHigh);
     document.getElementById('oi-mcap').textContent = formatMcap(data.meta.marketCap);
     document.getElementById('rc-entry').textContent = '₹' + fp(price);
+    // Restore chart type, colors, theme preferences
+    const ct = localStorage.getItem('nse_chart_type');
+    if (ct) { G.chartType = ct; document.querySelectorAll('[id^="ct-"]').forEach(b => b.classList.remove('active')); document.getElementById('ct-' + ct)?.classList.add('active'); }
+    const bc = localStorage.getItem('nse_bull_color'); if (bc) { G.bullColor = bc; const el = document.getElementById('bull-color'); if (el) el.value = bc; }
+    const rc = localStorage.getItem('nse_bear_color'); if (rc) { G.bearColor = rc; const el = document.getElementById('bear-color'); if (el) el.value = rc; }
+    const cd = localStorage.getItem('nse_chart_dark'); if (cd !== null) G.chartDark = cd === '1';
+    const cdbtn = document.getElementById('chart-theme-btn'); if (cdbtn) cdbtn.textContent = G.chartDark ? '🌙' : '☀️';
     showLoading(false); drawAll(); drawVolume();
   } catch(e) {
     showLoading(false);
-    showNotif('error', 'Chart Error', e.message || 'Failed to load ' + symbol);
-    document.getElementById('scrip-fullname').textContent = 'Error loading data';
+    const sym = symbol.replace('.NS','');
+    let msg = e.message || 'Failed to load';
+    if (msg.includes('404')) msg = `"${sym}" not found on Yahoo Finance. Try the exact NSE symbol (e.g. MTAR, TRIL). Some small-cap symbols may not be available.`;
+    else if (msg.includes('401')) msg = 'Proxy auth error — check Supabase anon key in config.';
+    else if (msg.includes('No chart')) msg = `No data returned for "${sym}". Symbol may be delisted or incorrect.`;
+    showNotif('error', 'Chart Error', msg);
+    document.getElementById('scrip-fullname').textContent = '⚠ ' + msg;
   }
 }
 
@@ -3068,6 +3202,30 @@ function clearDrawings() {
   G.drawings = [];
   const dc = document.getElementById('draw-canvas');
   if (dc && G.dCtx) G.dCtx.clearRect(0, 0, dc.width, dc.height);
+}
+
+function setChartType(type) {
+  G.chartType = type;
+  document.querySelectorAll('[id^="ct-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('ct-' + type)?.classList.add('active');
+  localStorage.setItem('nse_chart_type', type);
+  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
+}
+
+function setCandleColor(which, val) {
+  if (which === 'bull') G.bullColor = val;
+  else G.bearColor = val;
+  localStorage.setItem('nse_bull_color', G.bullColor);
+  localStorage.setItem('nse_bear_color', G.bearColor);
+  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
+}
+
+function toggleChartTheme() {
+  G.chartDark = !G.chartDark;
+  localStorage.setItem('nse_chart_dark', G.chartDark ? '1' : '0');
+  const btn = document.getElementById('chart-theme-btn');
+  if (btn) btn.textContent = G.chartDark ? '🌙' : '☀️';
+  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
 }
 
 // ── NO-AUTH MODE ─────────────────────────────────────────────
