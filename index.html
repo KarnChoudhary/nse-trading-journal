@@ -215,14 +215,14 @@ body {
   font-size: 10px; font-weight: 700; font-family: var(--font); background: transparent;
   transition: all .12s;
 }
-.e9  { border-color: #ff9800; color: #ff9800; }
-.e9.on  { background: rgba(255,152,0,.15); }
-.e21 { border-color: #2196f3; color: #2196f3; }
-.e21.on { background: rgba(33,150,243,.15); }
-.e50 { border-color: #f44336; color: #f44336; }
-.e50.on { background: rgba(244,67,54,.15); }
-.e200{ border-color: #9c27b0; color: #9c27b0; }
-.e200.on{ background: rgba(156,39,176,.15); }
+.e9 { border-color: #f0a500; color: #f0a500; }
+.e9.on { background: rgba(240,165,0,.15); }
+.e21 { border-color: #3d9eff; color: #3d9eff; }
+.e21.on { background: rgba(61,158,255,.15); }
+.e50 { border-color: #ff4560; color: #ff4560; }
+.e50.on { background: rgba(255,69,96,.15); }
+.e200 { border-color: #8b5cf6; color: #8b5cf6; }
+.e200.on { background: rgba(139,92,246,.15); }
 .draw-btn {
   padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2);
   background: transparent; color: var(--text2); cursor: pointer; font-size: 11px;
@@ -450,11 +450,110 @@ body {
   #sidebar { width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; }
 }
 
+/* ── LOGIN / AUTH SCREEN ── */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: radial-gradient(ellipse at 30% 40%, #0a2040 0%, #080c12 70%);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+}
+:root.light #auth-screen { background: radial-gradient(ellipse at 30% 40%, #c8dff5 0%, #f2f6fa 70%); }
+#auth-screen.hidden { display: none; }
+.auth-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 36px 32px; width: 380px; max-width: 94vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.auth-logo { font-family: var(--font); font-size: 10px; color: var(--accent); letter-spacing: 4px; margin-bottom: 8px; text-align:center; }
+.auth-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-align:center; }
+.auth-sub { font-size: 12px; color: var(--text2); margin-bottom: 24px; text-align:center; }
+.auth-field { position: relative; margin-bottom: 12px; }
+.auth-field input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  color: var(--text); padding: 11px 14px; border-radius: 9px;
+  font-size: 14px; font-family: var(--font2); outline: none; transition: border-color .2s;
+}
+.auth-field input:focus { border-color: var(--accent); }
+.auth-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
+.btn-auth { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; margin-top: 4px; }
+.btn-auth:hover { opacity: .85; }
+.btn-auth:disabled { opacity: .4; cursor: not-allowed; }
+.auth-error { color: var(--red); font-size: 12px; min-height: 18px; margin: 6px 0; }
+.auth-link { background: none; border: none; color: var(--text3); font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; }
+.auth-footer { text-align: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text3); }
+/* Admin panel */
+.admin-user-row:hover td { background: var(--card); }
+.admin-stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+.admin-stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; font-family: var(--font); letter-spacing: .5px; }
+.admin-stat-val { font-size: 20px; font-weight: 700; font-family: var(--font); margin-top: 2px; }
+
 </style>
 </head>
 <body>
-<div id="app">
+<!-- ════ AUTH SCREEN ════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">NSE LIVE</div>
+    <div class="auth-title">Trading Journal</div>
+    <div class="auth-sub" id="auth-sub">Sign in to your account</div>
 
+    <!-- Sign In Form -->
+    <div id="signin-form">
+      <div class="auth-field">
+        <input type="email" id="auth-email" placeholder="Email address" autocomplete="email"
+          onkeydown="if(event.key==='Enter')document.getElementById('auth-pass').focus()">
+      </div>
+      <div class="auth-field">
+        <input type="password" id="auth-pass" placeholder="Password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doSignIn()">
+        <button class="auth-eye" onclick="toggleAuthEye()">👁</button>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+      <button class="btn-auth" id="auth-btn" onclick="doSignIn()">Sign In →</button>
+      <div style="text-align:center;margin-top:10px">
+        <button class="auth-link" onclick="showForgotForm()">Forgot password?</button>
+      </div>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgot-form" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Enter your email — we'll send a reset link.</div>
+      <div class="auth-field">
+        <input type="email" id="reset-email" placeholder="Your email address">
+      </div>
+      <div class="auth-error" id="reset-error"></div>
+      <button class="btn-auth" onclick="doResetPassword()" style="margin-bottom:8px">Send Reset Link</button>
+      <button class="btn-auth" onclick="showSignInForm()" style="background:var(--panel);color:var(--text);border:1px solid var(--border2)">← Back</button>
+    </div>
+
+    <div class="auth-footer">Access is invite-only · Contact admin for an account</div>
+  </div>
+</div>
+
+<!-- ════ ADMIN SCREEN ════ -->
+<div id="admin-screen" class="screen" style="flex-direction:column;overflow:hidden">
+  <div class="j-header">
+    <h2>👑 Admin Panel</h2>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span style="font-size:11px;color:var(--text2)" id="admin-user-count"></span>
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminData()">↻ Refresh</button>
+      <button class="btn btn-primary btn-sm" onclick="showScreen('game-screen')">← Back</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px 18px;flex-shrink:0" id="admin-summary-cards"></div>
+  <div style="flex:1;overflow-y:auto;padding:0 18px 18px">
+    <div style="font-size:10px;color:var(--text3);font-family:var(--font);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">All Users</div>
+    <table class="j-tbl">
+      <thead><tr>
+        <th>User</th><th>Email</th><th>Capital</th><th>P&L ₹</th><th>P&L%</th>
+        <th>Trades</th><th>Wins</th><th>Losses</th><th>Open</th><th>WL</th><th>Joined</th>
+      </tr></thead>
+      <tbody id="admin-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="app">
 
 <!-- ════════════════════════════════════════
      CONFIG / SETUP SCREEN
@@ -556,6 +655,7 @@ body {
     <div class="cfg-actions">
       <button class="btn btn-primary" onclick="startApp()" style="flex:1">🚀 Launch Journal</button>
       <button class="btn btn-secondary btn-sm" onclick="showScreen('journal-screen')">📓 Journal</button>
+      <button class="btn btn-danger btn-sm" onclick="doSignOut()" title="Sign Out">⏻</button>
     </div>
   </div>
 </div>
@@ -574,7 +674,9 @@ body {
       </div>
       <div style="display:flex;gap:3px;flex-shrink:0">
         <button class="btn btn-xs btn-secondary" onclick="startScan()" title="Scan">🔍</button>
+        <button id="admin-btn" class="btn btn-xs btn-secondary" onclick="showScreen('admin-screen')" title="Admin" style="display:none">👑</button>
         <button class="btn btn-xs btn-secondary" onclick="showScreen('config-screen')" title="Settings">⚙</button>
+        <button class="btn btn-xs btn-danger" onclick="doSignOut()" title="Sign Out" style="background:rgba(255,69,96,.1);color:var(--red);border-color:rgba(255,69,96,.2)">⏻</button>
       </div>
     </div>
 
@@ -659,27 +761,18 @@ body {
       <button class="tf-btn" id="tf-W" onclick="switchTF('W')">W</button>
       <button class="tf-btn" id="tf-M" onclick="switchTF('M')">M</button>
       <div class="ctrl-sep"></div>
-      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">EMA9</button>
-      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">EMA21</button>
-      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">EMA50</button>
-      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">EMA200</button>
+      <button class="ema-toggle e9 on" id="em9" onclick="toggleEMA(9)">9</button>
+      <button class="ema-toggle e21 on" id="em21" onclick="toggleEMA(21)">21</button>
+      <button class="ema-toggle e50" id="em50" onclick="toggleEMA(50)">50</button>
+      <button class="ema-toggle e200" id="em200" onclick="toggleEMA(200)">200</button>
       <div class="ctrl-sep"></div>
-      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏</button>
-      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">—</button>
-      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶</button>
+      <button class="draw-btn" id="tool-trend" onclick="setTool('trend')">📏 Trend</button>
+      <button class="draw-btn" id="tool-hline" onclick="setTool('hline')">— H-Line</button>
+      <button class="draw-btn" id="tool-ray" onclick="setTool('ray')">⟶ Ray</button>
       <button class="draw-btn" onclick="clearDrawings()">🗑</button>
-      <div class="ctrl-sep"></div>
-      <button class="draw-btn" id="ct-candles" onclick="setChartType('candles')" title="Candles" style="font-size:11px;padding:2px 5px">🕯</button>
-      <button class="draw-btn" id="ct-hollow" onclick="setChartType('hollow')" title="Hollow Candles" style="font-size:11px;padding:2px 5px">◻</button>
-      <button class="draw-btn" id="ct-bars" onclick="setChartType('bars')" title="OHLC Bars" style="font-size:11px;padding:2px 5px">┤</button>
-      <button class="draw-btn" id="ct-line" onclick="setChartType('line')" title="Line" style="font-size:11px;padding:2px 5px">📈</button>
-      <div class="ctrl-sep"></div>
-      <label title="Bull candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▲<input type="color" id="bull-color" value="#26a69a" onchange="setCandleColor('bull',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
-      <label title="Bear candle colour" style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--text3);cursor:pointer">▼<input type="color" id="bear-color" value="#ef5350" onchange="setCandleColor('bear',this.value)" style="width:18px;height:14px;border:none;background:none;cursor:pointer;padding:0"></label>
       <div class="ctrl-right">
-        <button class="btn btn-xs btn-secondary" onclick="refreshChart()" title="Refresh">↻</button>
-        <button class="btn btn-xs btn-secondary" id="chart-theme-btn" onclick="toggleChartTheme()" title="Chart theme">🌙</button>
-        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()" title="App theme">◐</button>
+        <button class="btn btn-xs btn-secondary" onclick="refreshChart()">↻</button>
+        <button class="btn btn-xs btn-secondary" onclick="toggleTheme()">◐</button>
       </div>
     </div>
     <div class="ohlc-bar">
@@ -730,11 +823,12 @@ body {
         </div>
         <div class="tp-row">
           <div class="tp-label">Quantity (optional override)</div>
-          <input type="number" class="tp-input" id="tp-qty" placeholder="Leave blank = auto">
+          <input type="number" class="tp-input" id="tp-qty" placeholder="Leave blank = auto" oninput="calcRisk()">
         </div>
         <div class="risk-calc" id="risk-calc" style="display:none">
           <div class="rc-row"><span class="rc-lbl">Entry (last close)</span><span class="rc-val" id="rc-entry">—</span></div>
           <div class="rc-row"><span class="rc-lbl">Suggested Qty (1% risk)</span><span class="rc-val" id="rc-qty">—</span></div>
+          <div class="rc-row" id="rc-maxqty-row" style="display:none"><span class="rc-lbl">Max allowed qty</span><span class="rc-val" id="rc-maxqty">—</span></div>
           <div class="rc-row"><span class="rc-lbl">Capital used</span><span class="rc-val" id="rc-alloc">—</span></div>
           <div class="rc-row"><span class="rc-lbl">Risk ₹</span><span class="rc-val" id="rc-risk">—</span></div>
           <div class="rc-row"><span class="rc-lbl">SL %</span><span class="rc-val" id="rc-slpct">—</span></div>
@@ -944,10 +1038,6 @@ const G = {
   viewStart: 0,
   candleW: 9,
   chartPad: { l: 60, r: 70, t: 20, b: 30 },
-  chartType: 'candles',   // candles | hollow | bars | line
-  bullColor: '#26a69a',
-  bearColor: '#ef5350',
-  chartDark: true,        // independent chart theme
   wlFilter: 'all',
   jFilter: 'all',
   scanQueue: [],
@@ -1684,10 +1774,13 @@ const NSE_STOCKS = [
 ['ARTODN.NS','Artion','Healthcare',2000],
 ['MEDPLUSHL.NS','MedPlus Health Services','Healthcare',8000],
 ];
+];
 
 
-// ── SUPABASE CLIENT (no-auth, anon key only) ─────────────────
+// ── SUPABASE CLIENT (JS SDK — multi-user) ───────────────────
 let _sb = null;
+let _currentUser = null;
+let _currentProfile = null;
 
 function initSupabase() {
   if (!CFG.sbUrl || !CFG.sbKey) return false;
@@ -1695,22 +1788,30 @@ function initSupabase() {
   return true;
 }
 
+// RLS-aware helpers — Supabase SDK automatically attaches user JWT
 async function sbGet(table, params = '') {
   if (!_sb) throw new Error('Supabase not initialised');
   let q = _sb.from(table).select('*');
   const parts = params.replace(/^\?/, '').split('&').filter(Boolean);
   for (const p of parts) {
-    const eqIdx = p.indexOf('='); if (eqIdx < 0) continue;
-    const key = p.slice(0, eqIdx), val = decodeURIComponent(p.slice(eqIdx + 1));
-    if (key === 'order') { const [col, dir] = val.split('.'); q = q.order(col, { ascending: dir !== 'desc' }); }
-    else if (key === 'limit') { q = q.limit(parseInt(val)); }
-    else {
-      const dotIdx = key.indexOf('.'); if (dotIdx < 0) continue;
-      const col = key.slice(0, dotIdx), op = key.slice(dotIdx + 1);
-      if (op === 'eq') q = q.eq(col, val);
+    const eqIdx = p.indexOf('=');
+    if (eqIdx < 0) continue;
+    const key = p.slice(0, eqIdx);
+    const val = p.slice(eqIdx + 1);
+    if (key === 'order') {
+      const [col, dir] = val.split('.');
+      q = q.order(col, { ascending: dir !== 'desc' });
+    } else if (key === 'limit') {
+      q = q.limit(parseInt(val));
+    } else {
+      const dotIdx = key.indexOf('.');
+      if (dotIdx < 0) continue;
+      const col = key.slice(0, dotIdx);
+      const op  = key.slice(dotIdx + 1);
+      if (op === 'eq')  q = q.eq(col, val);
       else if (op === 'neq') q = q.neq(col, val);
-      else if (op === 'gt') q = q.gt(col, val);
-      else if (op === 'lt') q = q.lt(col, val);
+      else if (op === 'gt')  q = q.gt(col, val);
+      else if (op === 'lt')  q = q.lt(col, val);
     }
   }
   const { data, error } = await q;
@@ -1720,7 +1821,8 @@ async function sbGet(table, params = '') {
 
 async function sbPost(table, body) {
   if (!_sb) throw new Error('Supabase not initialised');
-  const { data, error } = await _sb.from(table).insert(body).select();
+  const row = { ...body, user_id: _currentUser?.id };
+  const { data, error } = await _sb.from(table).insert(row).select();
   if (error) throw new Error('sbPost ' + table + ': ' + error.message);
   return data || [];
 }
@@ -1738,26 +1840,90 @@ async function sbDelete(table, id, idCol = 'id') {
   return !error;
 }
 
-async function saveCapitalToDB() {
-  localStorage.setItem('nse_capital', JSON.stringify({ capital: CFG.capital, startCapital: CFG.startCapital }));
-  if (!_sb) return;
-  try { await _sb.from('settings').upsert({ id: 'default', capital: CFG.capital, start_capital: CFG.startCapital, updated_at: new Date().toISOString() }); } catch(e) {}
+async function loadProfile() {
+  const { data, error } = await _sb.from('profiles').select('*').eq('id', _currentUser.id).single();
+  if (!error && data) {
+    _currentProfile = data;
+    CFG.capital = data.capital ?? CFG.capital;
+    CFG.startCapital = data.start_capital ?? CFG.startCapital;
+    CFG.riskPct = data.risk_pct ?? CFG.riskPct;
+  }
+  return _currentProfile;
 }
 
+async function saveCapitalToDB() {
+  if (!_sb || !_currentUser) return;
+  await _sb.from('profiles')
+    .update({ capital: CFG.capital, start_capital: CFG.startCapital, updated_at: new Date().toISOString() })
+    .eq('id', _currentUser.id);
+}
+
+// Stub — capital now lives in profiles table, not settings
 async function loadCapitalFromDB() {
+  await loadProfile();
+}
+
+// ── DRAWINGS & PREFS PERSISTENCE (Supabase — cross-device) ───
+// Drawings saved per symbol. Prefs saved to settings row.
+
+async function saveDrawingsToDB(symbol, drawings) {
+  if (!_sb || !symbol) return;
+  try {
+    // Upsert into preferences table keyed by "drawings_{symbol}"
+    await _sb.from('preferences').upsert({
+      key: 'drawings_' + symbol,
+      value: JSON.stringify(drawings),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+  } catch(e) {
+    // Fallback: localStorage
+    try { localStorage.setItem('nse_drawings_' + symbol, JSON.stringify(drawings)); } catch(_) {}
+  }
+}
+
+async function loadDrawingsFromDB(symbol) {
+  if (!symbol) return [];
   if (_sb) {
     try {
-      const { data } = await _sb.from('settings').select('capital,start_capital').eq('id','default').single();
-      if (data) { CFG.capital = data.capital ?? CFG.capital; CFG.startCapital = data.start_capital ?? CFG.startCapital; return; }
+      const { data } = await _sb.from('preferences')
+        .select('value').eq('key', 'drawings_' + symbol).single();
+      if (data?.value) return JSON.parse(data.value);
     } catch(e) {}
   }
-  try { const s = JSON.parse(localStorage.getItem('nse_capital') || '{}'); if (s.capital) CFG.capital = s.capital; if (s.startCapital) CFG.startCapital = s.startCapital; } catch(e) {}
+  // Fallback localStorage
+  try { return JSON.parse(localStorage.getItem('nse_drawings_' + symbol) || '[]'); } catch(_) { return []; }
 }
 
-// ── YAHOO FINANCE PROXY ───────────────────────────────────────
+async function savePrefsToDB(prefs) {
+  // prefs = { chartType, bullColor, bearColor, chartDark, logScale }
+  const str = JSON.stringify(prefs);
+  localStorage.setItem('nse_chart_prefs', str);
+  if (!_sb) return;
+  try {
+    await _sb.from('preferences').upsert({
+      key: 'chart_prefs',
+      value: str,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+  } catch(e) {}
+}
+
+async function loadPrefsFromDB() {
+  if (_sb) {
+    try {
+      const { data } = await _sb.from('preferences')
+        .select('value').eq('key', 'chart_prefs').single();
+      if (data?.value) return JSON.parse(data.value);
+    } catch(e) {}
+  }
+  try { return JSON.parse(localStorage.getItem('nse_chart_prefs') || 'null'); } catch(_) { return null; }
+}
+
+// ── YAHOO FINANCE PROXY ──────────────────────────────────────
 function getProxyUrl() {
+  // Use Supabase edge function if configured, else try direct (may fail on CORS)
   if (CFG.sbUrl) return `${CFG.sbUrl.replace(/\/$/, '')}/functions/v1/${CFG.proxyFnName || 'yahoo-proxy'}`;
-  return 'https://query1.finance.yahoo.com';
+  return 'https://query1.finance.yahoo.com'; // fallback - likely to fail
 }
 
 async function fetchChart(symbol, range = '1y', interval = '1d') {
@@ -1776,25 +1942,16 @@ async function fetchChart(symbol, range = '1y', interval = '1d') {
 
 async function fetchQuote(symbol) {
   const proxy = getProxyUrl();
-  const url = `${proxy}?symbol=${encodeURIComponent(symbol)}&action=quote`;
-  const headers = CFG.sbKey ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
+  let url;
+  if (CFG.sbUrl) {
+    url = `${proxy}?symbol=${encodeURIComponent(symbol)}&action=quote`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+  }
+  const headers = CFG.sbUrl ? { apikey: CFG.sbKey, Authorization: `Bearer ${CFG.sbKey}` } : {};
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`Quote fetch failed: ${r.status}`);
-  const json = await r.json();
-  // Proxy returns v8/chart format for quote action
-  const meta = json?.chart?.result?.[0]?.meta;
-  if (!meta) return null;
-  const prev = meta.chartPreviousClose || meta.regularMarketPrice;
-  return {
-    regularMarketPrice: meta.regularMarketPrice,
-    regularMarketChangePercent: prev ? ((meta.regularMarketPrice - prev) / prev * 100) : 0,
-    marketCap: meta.marketCap || 0,
-    shortName: meta.shortName,
-    longName: meta.longName,
-    fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
-    fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
-    regularMarketVolume: meta.regularMarketVolume,
-  };
+  return r.json();
 }
 
 // Parse Yahoo Finance chart response
@@ -1820,6 +1977,7 @@ window.addEventListener('load', () => {
   const theme = localStorage.getItem('nse_theme');
   if (theme === 'light') document.documentElement.classList.add('light');
   updateMarketNotice();
+  initAuth(); // initialise Supabase auth — shows login if not signed in
 });
 
 function loadConfig() {
@@ -1857,27 +2015,29 @@ function saveConfig() {
 
 async function startApp() {
   saveConfig();
-  if (!CFG.sbUrl || !CFG.sbKey) {
+  if (!initSupabase()) {
     showNotif('error', 'Config Missing', 'Please enter Supabase URL and Anon Key');
     return;
   }
-  if (!initSupabase()) { showNotif('error', 'Init Failed', 'Could not connect to Supabase'); return; }
   showScreen('game-screen');
   initCanvases();
-  await loadCapitalFromDB();
+  try { await loadProfile(); } catch(e) { console.warn('Profile load failed:', e); }
+  CFG.capital = _currentProfile?.capital ?? CFG.capital;
+  CFG.startCapital = _currentProfile?.start_capital ?? CFG.startCapital;
   updateCapDisplay();
-  try { await loadWatchlist(); } catch(e) { console.warn('WL:', e.message); }
-  try { await loadPositions(); } catch(e) { console.warn('Pos:', e.message); }
+  try { await loadWatchlist(); } catch(e) {}
+  try { await loadPositions(); } catch(e) {}
   updateStats();
   checkAlerts();
   showLoading(false);
-  document.getElementById('sb-username').textContent = CFG.traderName || 'Trader';
-  // Restore chart preferences
-  const ct = localStorage.getItem('nse_chart_type'); if (ct) G.chartType = ct;
-  const bc = localStorage.getItem('nse_bull_color'); if (bc) { G.bullColor = bc; const el = document.getElementById('bull-color'); if (el) el.value = bc; }
-  const rc = localStorage.getItem('nse_bear_color'); if (rc) { G.bearColor = rc; const el = document.getElementById('bear-color'); if (el) el.value = rc; }
-  const cd = localStorage.getItem('nse_chart_dark'); if (cd !== null) G.chartDark = cd === '1';
-  const cdbtn = document.getElementById('chart-theme-btn'); if (cdbtn) cdbtn.textContent = G.chartDark ? '🌙' : '☀️';
+  // Show admin button if admin
+  if (_currentProfile?.is_admin) {
+    document.getElementById('admin-btn').style.display = 'block';
+  }
+  // Update username in sidebar
+  const uname = _currentProfile?.display_name || _currentUser?.email?.split('@')[0] || '';
+  document.getElementById('sb-username').textContent = uname;
+  // Load first watchlist stock
   const firstWL = _watchlistCache.find(w => w.status === 'watching' || w.status === 'in_trade');
   if (firstWL) loadStock(firstWL.symbol);
 }
@@ -2034,23 +2194,68 @@ function updateTradePanel() {
 
 // ── RISK CALC ─────────────────────────────────────────────────
 function calcRisk() {
-  const sl = parseFloat(document.getElementById('tp-sl').value);
-  if (!sl || !G.currentData) { document.getElementById('risk-calc').style.display = 'none'; return; }
-  const lastClose = G.currentData.closes.at(-1);
+  const slRaw = document.getElementById('tp-sl').value;
+  const sl = parseFloat(slRaw);
+  if (!sl || isNaN(sl) || !G.currentData) {
+    document.getElementById('risk-calc').style.display = 'none'; return;
+  }
+  const lastClose = G.currentData.closes.filter(c => c != null).at(-1);
   if (!lastClose) return;
   const slDist = Math.abs(lastClose - sl);
-  const slPct = (slDist / lastClose * 100).toFixed(2);
-  const riskAmt = CFG.capital * (CFG.riskPct / 100);
-  const suggestedQty = Math.floor(riskAmt / slDist);
-  const qtyInput = parseInt(document.getElementById('tp-qty').value) || suggestedQty;
-  const actualQty = qtyInput || suggestedQty;
-  const allocAmt = actualQty * lastClose;
-  const allocPct = (allocAmt / CFG.capital * 100).toFixed(1);
-  document.getElementById('rc-entry').textContent = '₹' + fp(lastClose);
-  document.getElementById('rc-qty').textContent = suggestedQty + ' shares';
-  document.getElementById('rc-alloc').textContent = '₹' + fn(allocAmt.toFixed(0)) + ' (' + allocPct + '%)';
-  document.getElementById('rc-risk').textContent = '₹' + fn((slDist * actualQty).toFixed(0));
-  document.getElementById('rc-slpct').textContent = slPct + '%';
+  if (slDist <= 0) return;
+
+  const riskBudget = CFG.capital * (CFG.riskPct / 100);   // e.g. ₹30,000 at 1%
+  const maxQty     = Math.floor(riskBudget / slDist);      // max qty within 1% risk
+  const qtyRaw     = document.getElementById('tp-qty').value;
+  const manualQty  = qtyRaw ? parseInt(qtyRaw) : 0;
+  const usingAuto  = !manualQty;
+  const qty        = usingAuto ? maxQty : manualQty;
+
+  const slPct      = (slDist / lastClose * 100);
+  const actualRisk = slDist * qty;
+  const actualRiskPct = (actualRisk / CFG.capital * 100);
+  const allocAmt   = qty * lastClose;
+  const allocPct   = (allocAmt / CFG.capital * 100);
+  const overLimit  = actualRisk > riskBudget * 1.01;  // >1% over budget
+
+  document.getElementById('rc-entry').textContent  = '₹' + fp(lastClose);
+  document.getElementById('rc-slpct').textContent  = slPct.toFixed(2) + '%';
+
+  // Suggested qty row
+  const qtyEl = document.getElementById('rc-qty');
+  qtyEl.textContent = maxQty + ' shares (max for 1% risk)';
+  qtyEl.style.color = 'var(--text)';
+
+  // Capital used row
+  const allocEl = document.getElementById('rc-alloc');
+  allocEl.textContent = '₹' + fn(allocAmt.toFixed(0)) + ' (' + allocPct.toFixed(1) + '% of capital)';
+  allocEl.style.color = 'var(--text)';
+
+  // Risk row — warn if manual qty exceeds 1% budget
+  const riskEl = document.getElementById('rc-risk');
+  if (usingAuto) {
+    riskEl.textContent = '₹' + fn(actualRisk.toFixed(0)) + ' (1.0% — within limit ✓)';
+    riskEl.style.color = 'var(--green)';
+  } else if (overLimit) {
+    riskEl.textContent = '₹' + fn(actualRisk.toFixed(0)) + ' (' + actualRiskPct.toFixed(2) + '% ⚠ exceeds ' + CFG.riskPct + '% limit!)';
+    riskEl.style.color = 'var(--red)';
+    allocEl.style.color = 'var(--red)';
+  } else {
+    riskEl.textContent = '₹' + fn(actualRisk.toFixed(0)) + ' (' + actualRiskPct.toFixed(2) + '% — within limit ✓)';
+    riskEl.style.color = 'var(--green)';
+  }
+
+  // Max allowed row (only show when user typed manual qty)
+  const maxRow = document.getElementById('rc-maxqty-row');
+  if (!usingAuto) {
+    maxRow.style.display = 'flex';
+    const maxEl = document.getElementById('rc-maxqty');
+    maxEl.textContent = maxQty + ' shares (buy more = over 1% risk)';
+    maxEl.style.color = overLimit ? 'var(--red)' : 'var(--text2)';
+  } else {
+    maxRow.style.display = 'none';
+  }
+
   document.getElementById('risk-calc').style.display = 'block';
 }
 
@@ -2252,12 +2457,23 @@ async function loadNextScanStock() {
 
   // Fetch live quote
   try {
-    const q = await fetchQuote(sym);
+    const json = await fetchQuote(sym);
+    const q = json?.quoteResponse?.result?.[0];
     G.scanCurrentMeta = q;
     if (q) {
-      const mcapCr = (q.marketCap || 0) / 1e7;
-      if (CFG.capMin && mcapCr < CFG.capMin) { G.scanIndex++; await loadNextScanStock(); return; }
-      if (CFG.capMax && mcapCr > CFG.capMax) { G.scanIndex++; await loadNextScanStock(); return; }
+      const mcapCr = (q.marketCap || 0) / 1e7; // convert to Crore
+      // Apply LIVE market cap filter
+      if (CFG.capMin && mcapCr < CFG.capMin) {
+        // Auto-skip stocks below cap filter — no need to show to user
+        G.scanIndex++;
+        await loadNextScanStock();
+        return;
+      }
+      if (CFG.capMax && mcapCr > CFG.capMax) {
+        G.scanIndex++;
+        await loadNextScanStock();
+        return;
+      }
       document.getElementById('scan-price').textContent = '₹' + fp(q.regularMarketPrice || 0);
       document.getElementById('scan-mcap').textContent = formatMcap(q.marketCap || 0);
       document.getElementById('scan-52h').textContent = '₹' + fp(q.fiftyTwoWeekHigh || 0);
@@ -2265,9 +2481,14 @@ async function loadNextScanStock() {
       const chg = q.regularMarketChangePercent || 0;
       document.getElementById('scan-chg').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
       document.getElementById('scan-chg').style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+      // Update status with live cap
       document.getElementById('scan-status').textContent =
         `${G.scanIndex + 1} / ${G.scanQueue.length} · MCap: ${formatMcap(q.marketCap)} · ${G.scanQueue.length - G.scanIndex - 1} remaining`;
-    } else { G.scanIndex++; await loadNextScanStock(); }
+    } else {
+      // Yahoo returned no data — skip silently
+      G.scanIndex++;
+      await loadNextScanStock();
+    }
   } catch(e) {
     document.getElementById('scan-price').textContent = 'N/A';
     document.getElementById('scan-mcap').textContent = 'N/A';
@@ -2387,7 +2608,8 @@ async function checkAlerts() {
     if (!alerts || !alerts.length) return;
     for (const a of alerts) {
       try {
-        const q = await fetchQuote(a.symbol);
+        const json = await fetchQuote(a.symbol);
+        const q = json?.quoteResponse?.result?.[0];
         if (!q) continue;
         const price = q.regularMarketPrice || 0;
         const triggered = (a.condition === 'above' && price >= a.target_price) ||
@@ -2633,11 +2855,10 @@ function onSearchInput(val) {
   _searchIdx = -1;
 
   if (!_searchResults.length) {
-    // Allow manual symbol entry
-    const nseSym = val.endsWith('.NS') ? val : val + '.NS';
+    // Allow manual symbol entry — show "Load custom symbol" option
     drop.innerHTML = `<div class="s-drop-item" onmousedown="loadCustomSymbol('${val}')">
       <span class="s-sym">${val}</span>
-      <span class="s-name">Load <b>${nseSym}</b> from Yahoo Finance (press Enter)</span>
+      <span class="s-name">Custom symbol — load from Yahoo Finance</span>
     </div>`;
     drop.style.display = 'block'; return;
   }
@@ -2703,535 +2924,247 @@ function loadSearched() {
   const val = document.getElementById('stock-search').value.trim().toUpperCase();
   if (!val) return;
   document.getElementById('search-dropdown').style.display = 'none';
-  document.getElementById('stock-search').value = '';
-  // Always append .NS for NSE stocks
+  // Check if it's already a .NS symbol
   const sym = val.endsWith('.NS') ? val : val + '.NS';
   loadStock(sym);
+  document.getElementById('stock-search').value = '';
 }
 
 function loadCustomSymbol(val) {
   document.getElementById('search-dropdown').style.display = 'none';
+  const sym = val.endsWith('.NS') ? val : val + '.NS';
+  loadStock(sym);
   document.getElementById('stock-search').value = '';
-  const sym = val.toUpperCase();
-  const fullSym = sym.endsWith('.NS') ? sym : sym + '.NS';
-  loadStock(fullSym);
 }
 
-// ── SCREEN NAVIGATION ────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const el = document.getElementById(id);
-  if (el) el.classList.add('active');
-  if (id === 'journal-screen') renderJournal();
-  if (id === 'alerts-screen') renderAlerts();
-  if (id === 'dismissed-screen') renderDismissed();
-}
-
-function updateMarketNotice() {
-  const el = document.getElementById('market-notice');
-  if (!el) return;
-  try {
-    const ist = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const day = ist.getDay();
-    const t = ist.getHours() * 60 + ist.getMinutes();
-    const open = day >= 1 && day <= 5 && t >= 555 && t < 930;
-    el.textContent = open ? '🟢 Market Open · EOD data updates at close' : '🔴 Market Closed · Data as of last session';
-    el.style.background = open ? 'rgba(0,229,176,0.12)' : 'rgba(255,255,255,0.04)';
-  } catch(e) {}
-}
-
-// ── CANVAS / CHART ENGINE ────────────────────────────────────
-function initCanvases() {
-  const mCanvas = document.getElementById('main-canvas');
-  const dCanvas = document.getElementById('draw-canvas');
-  const vCanvas = document.getElementById('vol-canvas');
-  if (!mCanvas) return;
-  G.mCtx = mCanvas.getContext('2d');
-  G.dCtx = dCanvas.getContext('2d');
-  G.vCtx = vCanvas.getContext('2d');
-
-  function resize() {
-    const wrap = document.getElementById('canvas-wrap');
-    const vwrap = document.getElementById('vol-wrap');
-    if (!wrap) return;
-    const w = wrap.clientWidth, mh = wrap.clientHeight;
-    const vh = vwrap ? vwrap.clientHeight : 70;
-    [mCanvas, dCanvas].forEach(c => { c.width = w; c.height = mh; });
-    vCanvas.width = w; vCanvas.height = vh;
-    if (G.currentData) { drawAll(); drawVolume(); }
+// ── AUTH (Supabase) ──────────────────────────────────────────
+function initAuth() {
+  // Must init Supabase first — needs CFG loaded
+  if (!CFG.sbUrl || !CFG.sbKey) {
+    // Show auth screen with config warning
+    document.getElementById('auth-sub').textContent = 'Configure Supabase URL & Key first ↓';
+    // Show config inputs inside auth screen
+    showAuthConfigPrompt();
+    return;
   }
-  new ResizeObserver(resize).observe(document.getElementById('canvas-wrap'));
-  resize();
+  if (!initSupabase()) return;
 
-  // Pan & draw state
-  let isPanning = false, panStartX = 0, panStartView = 0;
-
-  dCanvas.addEventListener('mousedown', e => {
-    const rect = dCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    if (G.tool) {
-      G.isDrawing = true;
-      G.drawStart = { x, y, bar: xToBar(x), price: pixelToPrice(y) };
-    } else { isPanning = true; panStartX = e.clientX; panStartView = G.viewStart; }
-  });
-
-  dCanvas.addEventListener('mousemove', e => {
-    const rect = dCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    if (isPanning && G.currentData) {
-      const dBars = Math.round((e.clientX - panStartX) / G.candleW);
-      const vis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
-      G.viewStart = Math.max(0, Math.min(G.currentData.closes.length - vis, panStartView - dBars));
-      drawAll(); drawVolume();
-    } else if (G.isDrawing && G.drawStart) {
-      drawAll();
-      const ctx = G.dCtx;
-      ctx.clearRect(0, 0, dCanvas.width, dCanvas.height);
-      ctx.strokeStyle = 'rgba(255,200,0,0.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
-      ctx.beginPath();
-      if (G.tool === 'hline') { ctx.moveTo(G.chartPad.l, y); ctx.lineTo(dCanvas.width - G.chartPad.r, y); }
-      else { ctx.moveTo(G.drawStart.x, G.drawStart.y); ctx.lineTo(x, y); }
-      ctx.stroke();
-      showCrosshair(x, y);
-    } else { showCrosshair(x, y); showOHLCForX(x); }
-  });
-
-  dCanvas.addEventListener('mouseup', e => {
-    const rect = dCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    if (isPanning) { isPanning = false; }
-    else if (G.isDrawing && G.drawStart) {
-      G.isDrawing = false;
-      G.drawings.push({ type: G.tool, bar1: G.drawStart.bar, price1: G.drawStart.price, bar2: xToBar(x), price2: pixelToPrice(y) });
-      drawAll(); G.drawStart = null;
+  // Listen for auth state changes
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      _currentUser = session.user;
+      document.getElementById('auth-screen').classList.add('hidden');
+      await startApp();
+    } else if (event === 'SIGNED_OUT') {
+      _currentUser = null;
+      _currentProfile = null;
+      document.getElementById('auth-screen').classList.remove('hidden');
+      // Reset app state
+      _watchlistCache = [];
+      _positionsCache = [];
+      G.currentSymbol = null;
+      G.currentData = null;
+      G.openPosition = null;
+    } else if (event === 'PASSWORD_RECOVERY') {
+      // User clicked reset link — show password update UI
+      showPasswordUpdatePrompt();
     }
   });
 
-  dCanvas.addEventListener('mouseleave', () => {
-    isPanning = false; G.isDrawing = false;
-    if (G.dCtx) G.dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
-  });
-
-  dCanvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    if (!G.currentData) return;
-    const dir = e.deltaY > 0 ? 1 : -1;
-    const vis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
-    G.candleW = Math.max(3, Math.min(32, G.candleW - dir * 1.5));
-    const newVis = Math.floor((dCanvas.width - G.chartPad.l - G.chartPad.r) / G.candleW);
-    G.viewStart = Math.max(0, Math.min(G.currentData.closes.length - newVis, G.viewStart + Math.round((vis - newVis) / 2)));
-    drawAll(); drawVolume();
-  }, { passive: false });
-}
-
-function priceToY(price, prMin, prMax, padT, chartH) {
-  return padT + chartH - ((price - prMin) / (prMax - prMin)) * chartH;
-}
-function pixelToPrice(y) {
-  if (G._prMin === undefined) return 0;
-  return G._prMax - ((y - G.chartPad.t) / G._chartH) * (G._prMax - G._prMin);
-}
-function xToBar(x) {
-  return (G._start || 0) + Math.floor((x - G.chartPad.l) / G.candleW);
-}
-function barToX(bar) {
-  return G.chartPad.l + (bar - (G._start || 0)) * G.candleW + G.candleW / 2;
-}
-
-function drawAll() {
-  const canvas = document.getElementById('main-canvas');
-  const ctx = G.mCtx;
-  if (!ctx || !G.currentData) return;
-  const { opens, highs, lows, closes, timestamps } = G.currentData;
-  const W = canvas.width, H = canvas.height;
-  const { l: pL, r: pR, t: pT, b: pB } = G.chartPad;
-  const cW = W - pL - pR, cH = H - pT - pB;
-  const vis = Math.floor(cW / G.candleW);
-  const s = Math.max(0, G.viewStart);
-  const e = Math.min(closes.length, s + vis);
-  G._start = s; G._end = e; G._chartW = cW; G._chartH = cH;
-
-  const sl = { o: opens.slice(s,e), h: highs.slice(s,e), l: lows.slice(s,e), c: closes.slice(s,e), t: timestamps.slice(s,e) };
-  const valids = sl.l.filter(v => v != null);
-  if (!valids.length) return;
-  const minP = Math.min(...valids), maxP = Math.max(...sl.h.filter(v => v != null));
-  const pad = (maxP - minP) * 0.06 || 1;
-  const prMin = minP - pad, prMax = maxP + pad;
-  G._prMin = prMin; G._prMax = prMax;
-
-  // ── Chart background (independent theme) ──
-  const isDark = G.chartDark;
-  const bg      = isDark ? '#0d1117' : '#ffffff';
-  const gridCol = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
-  const lblCol  = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.45)';
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // ── Grid lines ──
-  ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
-  for (let i = 0; i <= 5; i++) {
-    const y = pT + (cH / 5) * i;
-    ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(W - pR, y); ctx.stroke();
-    const price = prMax - (prMax - prMin) * (i / 5);
-    ctx.fillStyle = lblCol;
-    ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    ctx.fillText('₹' + fp(price), pL - 4, y + 3);
-  }
-
-  // ── Current price dashed line ──
-  const lastClose = closes[closes.length - 1];
-  if (lastClose) {
-    const py = priceToY(lastClose, prMin, prMax, pT, cH);
-    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(0,229,176,0.45)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pL, py); ctx.lineTo(W - pR, py); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#00e5b0'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('₹' + fp(lastClose), W - pR + 3, py + 3);
-  }
-
-  // ── Draw candles/bars/line ──
-  const bull = G.bullColor || '#26a69a';
-  const bear = G.bearColor || '#ef5350';
-  const type = G.chartType || 'candles';
-
-  if (type === 'line') {
-    ctx.strokeStyle = bull; ctx.lineWidth = 1.5; ctx.setLineDash([]);
-    ctx.beginPath(); let lStarted = false;
-    sl.c.forEach((c, i) => {
-      if (c == null) return;
-      const cx = pL + i * G.candleW + G.candleW / 2;
-      const yC = priceToY(c, prMin, prMax, pT, cH);
-      if (!lStarted) { ctx.moveTo(cx, yC); lStarted = true; } else ctx.lineTo(cx, yC);
-    });
-    ctx.stroke();
-  } else {
-    sl.c.forEach((c, i) => {
-      if (c == null) return;
-      const o = sl.o[i], h = sl.h[i], l = sl.l[i];
-      if (o == null) return;
-      const cx = pL + i * G.candleW + G.candleW / 2;
-      const bw = Math.max(1, G.candleW * 0.7);
-      const up = c >= o;
-      const col = up ? bull : bear;
-      const yH = priceToY(h, prMin, prMax, pT, cH);
-      const yL = priceToY(l, prMin, prMax, pT, cH);
-      const yO = priceToY(o, prMin, prMax, pT, cH);
-      const yC = priceToY(c, prMin, prMax, pT, cH);
-
-      if (type === 'bars') {
-        // OHLC bar chart
-        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx - bw * 0.4, yO); ctx.lineTo(cx, yO); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, yC); ctx.lineTo(cx + bw * 0.4, yC); ctx.stroke();
-      } else {
-        // Candles (filled) or Hollow candles
-        ctx.strokeStyle = col; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
-        const bodyH = Math.max(1, Math.abs(yC - yO));
-        const bodyY = Math.min(yO, yC);
-        if (type === 'hollow') {
-          // Hollow: outline for up candles, filled for down
-          if (up) {
-            ctx.strokeStyle = col; ctx.lineWidth = 1.2;
-            ctx.strokeRect(cx - bw / 2, bodyY, bw, bodyH);
-          } else {
-            ctx.fillStyle = col;
-            ctx.fillRect(cx - bw / 2, bodyY, bw, bodyH);
-          }
-        } else {
-          // Solid candles
-          ctx.fillStyle = col;
-          ctx.fillRect(cx - bw / 2, bodyY, bw, bodyH);
-        }
-      }
-    });
-  }
-
-  // ── X-axis timeline ──
-  ctx.fillStyle = lblCol;
-  ctx.font = '9px monospace'; ctx.textAlign = 'center';
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const minBarPx = G.currentTF === 'D' ? 38 : 52;
-  const step = Math.max(1, Math.ceil(minBarPx / G.candleW));
-  let lastYear = -1, lastMonth = -1;
-
-  sl.t.forEach((ts, i) => {
-    if (i % step !== 0 && i !== 0) return;
-    const xp = pL + i * G.candleW + G.candleW / 2;
-    const d = new Date(ts * 1000);
-    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate();
-    let line1 = '', line2 = '';
-
-    if (G.currentTF === 'D') {
-      line1 = String(day).padStart(2,'0');
-      if (mo !== lastMonth || yr !== lastYear) {
-        line2 = MONTHS[mo] + (yr !== lastYear ? ` '${String(yr).slice(2)}` : '');
-        lastMonth = mo; lastYear = yr;
-      }
-    } else if (G.currentTF === 'W') {
-      line1 = `${String(day).padStart(2,'0')} ${MONTHS[mo]}`;
-      if (yr !== lastYear) { line2 = String(yr); lastYear = yr; }
+  // Check existing session
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      _currentUser = session.user;
+      document.getElementById('auth-screen').classList.add('hidden');
+      startApp();
     } else {
-      line1 = MONTHS[mo];
-      line2 = String(yr);
-      lastYear = yr;
-    }
-
-    ctx.fillStyle = lblCol;
-    ctx.fillText(line1, xp, H - pB + 13);
-    if (line2) {
-      ctx.fillStyle = isDark ? 'rgba(0,229,176,0.7)' : 'rgba(0,150,100,0.8)';
-      ctx.fillText(line2, xp, H - pB + 23);
+      document.getElementById('auth-screen').classList.remove('hidden');
     }
   });
+}
 
-  // ── EMAs — fixed colors: 9=orange, 21=blue, 50=red, 200=purple ──
-  const emaColors = { 9: '#ff9800', 21: '#2196f3', 50: '#f44336', 200: '#9c27b0' };
-  Object.entries(G.emas).forEach(([period, on]) => {
-    if (!on) return;
-    drawEMA(parseInt(period), emaColors[period], closes, s, e, pL, pT, cH, prMin, prMax);
+function showAuthConfigPrompt() {
+  // If Supabase not configured, show inline config in auth card
+  const card = document.querySelector('.auth-card');
+  if (!card) return;
+  const existing = document.getElementById('auth-config-inline');
+  if (existing) return;
+  const div = document.createElement('div');
+  div.id = 'auth-config-inline';
+  div.style.cssText = 'margin-top:16px;padding-top:14px;border-top:1px solid var(--border)';
+  div.innerHTML = `
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Enter your Supabase config to continue:</div>
+    <div class="auth-field"><input type="text" id="inline-sb-url" placeholder="Supabase URL" style="font-size:12px" value="${CFG.sbUrl||''}"></div>
+    <div class="auth-field"><input type="password" id="inline-sb-key" placeholder="Anon Key" style="font-size:12px" value="${CFG.sbKey||''}"></div>
+    <button class="btn-auth" onclick="applyInlineConfig()" style="font-size:13px">Connect →</button>
+  `;
+  card.appendChild(div);
+}
+
+function applyInlineConfig() {
+  const url = document.getElementById('inline-sb-url')?.value.trim();
+  const key = document.getElementById('inline-sb-key')?.value.trim();
+  if (!url || !key) { showNotif('error', 'Missing', 'Enter both URL and key'); return; }
+  CFG.sbUrl = url; CFG.sbKey = key;
+  localStorage.setItem('nse_live_cfg', JSON.stringify(CFG));
+  document.getElementById('auth-config-inline')?.remove();
+  document.getElementById('auth-sub').textContent = 'Sign in to your account';
+  initAuth();
+}
+
+async function doSignIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-error');
+  const btn   = document.getElementById('auth-btn');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Enter email and password'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    errEl.textContent = error.message === 'Invalid login credentials'
+      ? 'Wrong email or password'
+      : error.message;
+    btn.disabled = false; btn.textContent = 'Sign In →';
+  }
+  // On success, onAuthStateChange fires automatically
+}
+
+async function doSignOut() {
+  if (!_sb) return;
+  await _sb.auth.signOut();
+  showScreen('config-screen'); // reset view
+  toast('Signed out');
+}
+
+function showForgotForm() {
+  document.getElementById('signin-form').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'block';
+  document.getElementById('auth-sub').textContent = 'Password Reset';
+  const email = document.getElementById('auth-email').value;
+  if (email) document.getElementById('reset-email').value = email;
+}
+
+function showSignInForm() {
+  document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('signin-form').style.display = 'block';
+  document.getElementById('auth-sub').textContent = 'Sign in to your account';
+}
+
+async function doResetPassword() {
+  const email = document.getElementById('reset-email').value.trim();
+  const errEl = document.getElementById('reset-error');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Enter your email'; return; }
+  const { error } = await _sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
   });
-
-  drawDrawings(pL, pT, cH, prMin, prMax, s, e);
+  if (error) { errEl.textContent = error.message; return; }
+  errEl.style.color = 'var(--green)';
+  errEl.textContent = '✅ Reset link sent! Check your email.';
 }
 
-function drawEMA(period, color, closes, start, end, pL, pT, cH, prMin, prMax) {
-  if (closes.length < period) return;
-  const k = 2 / (period + 1);
-  let ema = closes.slice(0, period).reduce((a, b) => a + (b || 0), 0) / period;
-  const vals = new Array(period - 1).fill(null);
-  for (let i = period - 1; i < closes.length; i++) {
-    ema = (closes[i] || ema) * k + ema * (1 - k);
-    vals.push(ema);
-  }
-  const ctx = G.mCtx;
-  ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.setLineDash([]);
-  ctx.beginPath(); let started = false;
-  for (let i = start; i < end; i++) {
-    if (!vals[i]) continue;
-    const xp = pL + (i - start) * G.candleW + G.candleW / 2;
-    const yp = priceToY(vals[i], prMin, prMax, pT, cH);
-    if (!started) { ctx.moveTo(xp, yp); started = true; } else ctx.lineTo(xp, yp);
-  }
-  ctx.stroke();
-}
-
-function drawVolume() {
-  const canvas = document.getElementById('vol-canvas');
-  const ctx = G.vCtx;
-  if (!ctx || !G.currentData) return;
-  const { volumes, closes, opens } = G.currentData;
-  const W = canvas.width, H = canvas.height;
-  const s = G._start || 0, e = G._end || closes.length;
-  const isDark = G.chartDark;
-  ctx.clearRect(0, 0, W, H);
-
-  // Background
-  ctx.fillStyle = isDark ? '#0d1117' : '#ffffff';
-  ctx.fillRect(0, 0, W, H);
-
-  const slVol = volumes.slice(s, e);
-  const maxV = Math.max(...slVol.filter(v => v != null), 1);
-
-  // Volume bars
-  for (let i = s; i < e; i++) {
-    const v = volumes[i]; if (v == null) continue;
-    const up = closes[i] >= opens[i];
-    const bh = (v / maxV) * (H - 8);
-    const xp = G.chartPad.l + (i - s) * G.candleW;
-    const bw = Math.max(1, G.candleW * 0.7);
-    ctx.fillStyle = up
-      ? (G.bullColor ? G.bullColor + '66' : 'rgba(38,166,154,0.4)')
-      : (G.bearColor ? G.bearColor + '66' : 'rgba(239,83,80,0.4)');
-    ctx.fillRect(xp + (G.candleW - bw) / 2, H - bh, bw, bh);
-  }
-
-  // 20-period Volume SMA line
-  const smaPeriod = 20;
-  if (volumes.length >= smaPeriod) {
-    ctx.strokeStyle = isDark ? 'rgba(255,200,50,0.85)' : 'rgba(200,120,0,0.85)';
-    ctx.lineWidth = 1.5; ctx.setLineDash([]);
-    ctx.beginPath(); let smaStarted = false;
-    for (let i = s; i < e; i++) {
-      if (i < smaPeriod - 1) continue;
-      const slice = volumes.slice(i - smaPeriod + 1, i + 1).filter(v => v != null);
-      if (!slice.length) continue;
-      const avg = slice.reduce((a, b) => a + b, 0) / slice.length;
-      const xp = G.chartPad.l + (i - s) * G.candleW + G.candleW / 2;
-      const yp = H - (avg / maxV) * (H - 8);
-      if (!smaStarted) { ctx.moveTo(xp, yp); smaStarted = true; } else ctx.lineTo(xp, yp);
-    }
-    ctx.stroke();
-
-    // Vol SMA label
-    ctx.fillStyle = isDark ? 'rgba(255,200,50,0.7)' : 'rgba(200,120,0,0.7)';
-    ctx.font = '8px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('VOL SMA20', G.chartPad.l + 2, 10);
-  }
-}
-
-function drawDrawings(pL, pT, cH, prMin, prMax, start, end) {
-  const canvas = document.getElementById('draw-canvas');
-  const ctx = G.dCtx;
-  if (!ctx || G.isDrawing) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.lineWidth = 1.5; ctx.setLineDash([]);
-  G.drawings.forEach(d => {
-    const x1 = barToX(d.bar1), y1 = priceToY(d.price1, prMin, prMax, pT, cH);
-    const x2 = barToX(d.bar2), y2 = d.type === 'hline' ? y1 : priceToY(d.price2, prMin, prMax, pT, cH);
-    ctx.strokeStyle = 'rgba(255,200,0,0.85)';
-    ctx.beginPath();
-    if (d.type === 'hline') { ctx.moveTo(pL, y1); ctx.lineTo(canvas.width - G.chartPad.r, y1); }
-    else if (d.type === 'ray') {
-      const dx = x2 - x1, dy = y2 - y1, t2 = (canvas.width - G.chartPad.r - x1) / (dx || 0.001);
-      ctx.moveTo(x1, y1); ctx.lineTo(x1 + dx * t2, y1 + dy * t2);
-    } else { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,200,0,0.8)'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('₹' + fp(d.price1), canvas.width - G.chartPad.r + 2, y1 + 3);
+function showPasswordUpdatePrompt() {
+  // Called when user clicks password reset link
+  const newPass = prompt('Enter your new password (min 6 chars):');
+  if (!newPass || newPass.length < 6) return;
+  _sb.auth.updateUser({ password: newPass }).then(({ error }) => {
+    if (error) { showNotif('error', 'Error', error.message); return; }
+    showNotif('success', '✅ Password Updated', 'You are now signed in.');
   });
 }
 
-function showCrosshair(x, y) {
-  const canvas = document.getElementById('draw-canvas');
-  const ctx = G.dCtx;
-  if (!ctx) return;
-  if (!G.isDrawing) drawDrawings(G.chartPad.l, G.chartPad.t, G._chartH, G._prMin, G._prMax, G._start, G._end);
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-  ctx.beginPath();
-  ctx.moveTo(x, G.chartPad.t); ctx.lineTo(x, canvas.height - G.chartPad.b);
-  ctx.moveTo(G.chartPad.l, y); ctx.lineTo(canvas.width - G.chartPad.r, y);
-  ctx.stroke(); ctx.setLineDash([]);
-  if (G._prMax !== undefined) {
-    const price = pixelToPrice(y);
-    ctx.fillStyle = 'rgba(30,35,50,0.9)';
-    ctx.fillRect(canvas.width - G.chartPad.r + 1, y - 7, G.chartPad.r - 2, 14);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('₹' + fp(price), canvas.width - G.chartPad.r + 3, y + 3);
-  }
+function toggleAuthEye() {
+  const inp = document.getElementById('auth-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-function showOHLCForX(x) {
-  if (!G.currentData || G._start === undefined) return;
-  const bar = xToBar(x);
-  if (bar < 0 || bar >= G.currentData.closes.length) return;
-  const { opens, highs, lows, closes, volumes } = G.currentData;
-  document.getElementById('oi-o').textContent = '₹' + fp(opens[bar]);
-  document.getElementById('oi-h').textContent = '₹' + fp(highs[bar]);
-  document.getElementById('oi-l').textContent = '₹' + fp(lows[bar]);
-  document.getElementById('oi-c').textContent = '₹' + fp(closes[bar]);
-  document.getElementById('oi-v').textContent = fv(volumes[bar] || 0);
-}
-
-// ── CHART CONTROLS ────────────────────────────────────────────
-async function loadStock(symbol) {
-  if (!symbol) return;
-  G.currentSymbol = symbol; G.drawings = [];
-  document.getElementById('scrip-sym').textContent = symbol.replace('.NS', '');
-  document.getElementById('scrip-fullname').textContent = '...';
-  document.getElementById('price-badge').textContent = '—';
-  showLoading(true, 'Loading ' + symbol.replace('.NS', '') + '...', 'Fetching chart data');
-  await loadActivePosition(symbol);
-  updateTradePanel();
+// ── ADMIN PANEL ───────────────────────────────────────────────
+async function loadAdminData() {
+  if (!_currentProfile?.is_admin) return;
+  showLoading(true, 'Loading admin data...');
   try {
-    const tfMap = { D: ['1y','1d'], W: ['5y','1wk'], M: ['10y','1mo'] };
-    const [range, interval] = tfMap[G.currentTF] || ['1y','1d'];
-    const json = await fetchChart(symbol, range, interval);
-    const data = parseChartData(json);
-    G.currentData = data; G.currentMeta = data.meta;
-    const vis = Math.floor(120);
-    G.viewStart = Math.max(0, data.closes.length - vis);
-    G.candleW = 9;
-    const name = data.meta.longName || data.meta.shortName || symbol.replace('.NS','');
-    const price = data.meta.regularMarketPrice || data.closes[data.closes.length - 1] || 0;
-    const prev = data.meta.chartPreviousClose || data.closes[data.closes.length - 2] || price;
-    const chgPct = prev ? ((price - prev) / prev * 100) : 0;
-    document.getElementById('scrip-fullname').textContent = name;
-    document.getElementById('price-badge').textContent = '₹' + fp(price);
-    const chgEl = document.getElementById('chg-badge');
-    chgEl.textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
-    chgEl.style.color = chgPct >= 0 ? 'var(--green)' : 'var(--red)';
-    document.getElementById('oi-52').textContent = '₹' + fp(data.meta.fiftyTwoWeekLow) + '–₹' + fp(data.meta.fiftyTwoWeekHigh);
-    document.getElementById('oi-mcap').textContent = formatMcap(data.meta.marketCap);
-    document.getElementById('rc-entry').textContent = '₹' + fp(price);
-    // Restore chart type, colors, theme preferences
-    const ct = localStorage.getItem('nse_chart_type');
-    if (ct) { G.chartType = ct; document.querySelectorAll('[id^="ct-"]').forEach(b => b.classList.remove('active')); document.getElementById('ct-' + ct)?.classList.add('active'); }
-    const bc = localStorage.getItem('nse_bull_color'); if (bc) { G.bullColor = bc; const el = document.getElementById('bull-color'); if (el) el.value = bc; }
-    const rc = localStorage.getItem('nse_bear_color'); if (rc) { G.bearColor = rc; const el = document.getElementById('bear-color'); if (el) el.value = rc; }
-    const cd = localStorage.getItem('nse_chart_dark'); if (cd !== null) G.chartDark = cd === '1';
-    const cdbtn = document.getElementById('chart-theme-btn'); if (cdbtn) cdbtn.textContent = G.chartDark ? '🌙' : '☀️';
-    showLoading(false); drawAll(); drawVolume();
+    // Fetch all profiles
+    const { data: profiles, error } = await _sb.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+
+    document.getElementById('admin-user-count').textContent = profiles.length + ' users';
+
+    // Fetch all trades for stats
+    const { data: allTrades } = await _sb.from('trades').select('user_id,pnl,result');
+    const { data: allPositions } = await _sb.from('positions').select('user_id,status');
+    const { data: allWL } = await _sb.from('watchlist').select('user_id');
+
+    // Build per-user stats
+    const tradesByUser = {};
+    (allTrades || []).forEach(t => {
+      if (!tradesByUser[t.user_id]) tradesByUser[t.user_id] = [];
+      tradesByUser[t.user_id].push(t);
+    });
+    const openByUser = {};
+    (allPositions || []).filter(p => p.status === 'open').forEach(p => {
+      openByUser[p.user_id] = (openByUser[p.user_id] || 0) + 1;
+    });
+    const wlByUser = {};
+    (allWL || []).forEach(w => {
+      wlByUser[w.user_id] = (wlByUser[w.user_id] || 0) + 1;
+    });
+
+    // Summary cards
+    const totalCapital = profiles.reduce((s, p) => s + (p.capital || 0), 0);
+    const totalPnl = profiles.reduce((s, p) => s + ((p.capital || 0) - (p.start_capital || 0)), 0);
+    const totalTrades = (allTrades || []).length;
+    const totalWins = (allTrades || []).filter(t => t.result === 'WIN').length;
+    const totalOpen = (allPositions || []).filter(p => p.status === 'open').length;
+    document.getElementById('admin-summary-cards').innerHTML = `
+      <div class="admin-stat"><div class="admin-stat-label">Total Users</div><div class="admin-stat-val" style="color:var(--blue)">${profiles.length}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">Combined Capital</div><div class="admin-stat-val">₹${fn(totalCapital.toFixed(0))}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">Combined P&L</div><div class="admin-stat-val" style="color:${totalPnl>=0?'var(--green)':'var(--red)'}">${totalPnl>=0?'+':''}₹${fn(totalPnl.toFixed(0))}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">Total Trades</div><div class="admin-stat-val">${totalTrades}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">Open Positions</div><div class="admin-stat-val" style="color:var(--accent)">${totalOpen}</div></div>
+    `;
+
+    // Users table
+    document.getElementById('admin-tbody').innerHTML = profiles.map(p => {
+      const trades = tradesByUser[p.id] || [];
+      const wins = trades.filter(t => t.result === 'WIN').length;
+      const losses = trades.filter(t => t.result === 'LOSS').length;
+      const wr = trades.length ? Math.round(wins / trades.length * 100) : 0;
+      const pnl = (p.capital || 0) - (p.start_capital || 0);
+      const pnlPct = p.start_capital ? (pnl / p.start_capital * 100).toFixed(1) : 0;
+      const isYou = p.id === _currentUser?.id;
+      return `<tr class="admin-user-row">
+        <td style="font-weight:700">${p.display_name || '—'}${isYou ? ' <span style="color:var(--accent);font-size:9px">(you)</span>' : ''}${p.is_admin ? ' 👑' : ''}</td>
+        <td style="color:var(--text2);font-size:11px">${p.email || '—'}</td>
+        <td style="font-family:var(--font)">₹${fn((p.capital||0).toFixed(0))}</td>
+        <td style="color:${pnl>=0?'var(--green)':'var(--red)'};font-family:var(--font)">${pnl>=0?'+':''}₹${fn(pnl.toFixed(0))}</td>
+        <td style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnlPct}%</td>
+        <td>${trades.length}</td>
+        <td style="color:var(--green)">${wins}</td>
+        <td style="color:var(--red)">${losses}</td>
+        <td style="color:var(--accent)">${openByUser[p.id]||0}</td>
+        <td style="color:var(--text2)">${wlByUser[p.id]||0}</td>
+        <td style="color:var(--text3);font-size:10px">${p.created_at?.slice(0,10)||'—'}</td>
+      </tr>`;
+    }).join('');
+
   } catch(e) {
-    showLoading(false);
-    const sym = symbol.replace('.NS','');
-    let msg = e.message || 'Failed to load';
-    if (msg.includes('404')) msg = `"${sym}" not found on Yahoo Finance. Try the exact NSE symbol (e.g. MTAR, TRIL). Some small-cap symbols may not be available.`;
-    else if (msg.includes('401')) msg = 'Proxy auth error — check Supabase anon key in config.';
-    else if (msg.includes('No chart')) msg = `No data returned for "${sym}". Symbol may be delisted or incorrect.`;
-    showNotif('error', 'Chart Error', msg);
-    document.getElementById('scrip-fullname').textContent = '⚠ ' + msg;
+    showNotif('error', 'Admin Error', e.message);
   }
+  showLoading(false);
 }
 
-async function refreshChart() { if (G.currentSymbol) await loadStock(G.currentSymbol); }
-
-function switchTF(tf) {
-  G.currentTF = tf;
-  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tf-' + tf)?.classList.add('active');
-  if (G.currentSymbol) loadStock(G.currentSymbol);
+// Override showScreen to load admin data when navigating to admin panel
+const _origShowScreen = showScreen;
+function showScreen(id) {
+  _origShowScreen(id);
+  if (id === 'admin-screen') loadAdminData();
 }
 
-function toggleEMA(period) {
-  G.emas[period] = !G.emas[period];
-  document.getElementById('em' + period)?.classList.toggle('on', G.emas[period]);
-  if (G.mCtx && G.currentData) drawAll();
-}
-
-function setTool(tool) {
-  G.tool = G.tool === tool ? null : tool;
-  document.querySelectorAll('.draw-btn[id^="tool-"]').forEach(b => b.classList.remove('active'));
-  if (G.tool) document.getElementById('tool-' + tool)?.classList.add('active');
-  const dc = document.getElementById('draw-canvas');
-  if (dc) dc.style.cursor = G.tool ? 'crosshair' : 'default';
-}
-
-function clearDrawings() {
-  G.drawings = [];
-  const dc = document.getElementById('draw-canvas');
-  if (dc && G.dCtx) G.dCtx.clearRect(0, 0, dc.width, dc.height);
-}
-
-function setChartType(type) {
-  G.chartType = type;
-  document.querySelectorAll('[id^="ct-"]').forEach(b => b.classList.remove('active'));
-  document.getElementById('ct-' + type)?.classList.add('active');
-  localStorage.setItem('nse_chart_type', type);
-  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
-}
-
-function setCandleColor(which, val) {
-  if (which === 'bull') G.bullColor = val;
-  else G.bearColor = val;
-  localStorage.setItem('nse_bull_color', G.bullColor);
-  localStorage.setItem('nse_bear_color', G.bearColor);
-  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
-}
-
-function toggleChartTheme() {
-  G.chartDark = !G.chartDark;
-  localStorage.setItem('nse_chart_dark', G.chartDark ? '1' : '0');
-  const btn = document.getElementById('chart-theme-btn');
-  if (btn) btn.textContent = G.chartDark ? '🌙' : '☀️';
-  if (G.mCtx && G.currentData) { drawAll(); drawVolume(); }
-}
-
-// ── NO-AUTH MODE ─────────────────────────────────────────────
-// App uses Supabase anon key. No login required.
+// ── TELEGRAM TOKEN SETUP (extra setting) ─────────────────────
+// Run this in browser console to set your bot token:
+// localStorage.setItem('nse_tg_token', 'YOUR_BOT_TOKEN_HERE')
 </script>
 
-</script>
 </body>
 </html>
